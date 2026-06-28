@@ -1,0 +1,132 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pietro.works — Slides</title>
+<style>
+@font-face{font-family:'Clash Display';src:url('fonts/clash-500.woff2') format('woff2');font-weight:500;font-display:swap;}
+@font-face{font-family:'Clash Display';src:url('fonts/clash-600.woff2') format('woff2');font-weight:600;font-display:swap;}
+@font-face{font-family:'Clash Display';src:url('fonts/clash-700.woff2') format('woff2');font-weight:700;font-display:swap;}
+</style>
+<link rel="stylesheet" href="fonts/dm.local.css"/>
+<style>
+  :root{--ink:#eef4ff;--muted:#9fb0d0;--dim:#6b7da0;--cyan:#39e8ff;--green:#00ff99;--purple:#a855f7;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;overflow:hidden;background:#05080f;}
+  .stage-wrap{position:fixed;inset:0;overflow:hidden;}
+  .stage{position:absolute;top:50%;left:50%;width:1080px;height:1080px;transform-origin:center;}
+  .slide{position:relative;width:1080px;height:1080px;overflow:hidden;color:var(--ink);
+    font-family:'Clash Display','DM Sans',sans-serif;background:#060a12;isolation:isolate;}
+  /* layer 0: brand gradient — color + depth */
+  .s-grad{position:absolute;inset:0;z-index:0;background:
+    radial-gradient(ellipse 80% 70% at 70% 22%, rgba(57,232,255,.16), transparent 60%),
+    radial-gradient(ellipse 70% 70% at 22% 16%, rgba(168,85,247,.16), transparent 60%),
+    radial-gradient(ellipse 90% 80% at 50% 98%, rgba(0,255,153,.07), transparent 62%),
+    linear-gradient(155deg,#0b1426 0%,#0a1120 50%,#070c17 100%);}
+  /* layer 1: contextual image — faded, desaturated, gives theme */
+  .s-photo{position:absolute;inset:0;z-index:1;background-size:cover;background-position:50% 42%;opacity:.42;filter:saturate(.6) contrast(1.03);}
+  /* layer 2: scrim for legibility */
+  .s-scrim{position:absolute;inset:0;z-index:2;pointer-events:none;background:
+    linear-gradient(180deg,rgba(6,10,18,.5) 0%,rgba(6,10,18,.1) 36%,rgba(6,10,18,.14) 60%,rgba(6,10,18,.64) 100%);}
+  /* layer 3: dot-matrix — brand signature, on top of the photo */
+  .s-dots{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:.26;mix-blend-mode:screen;
+    background-image:image-set("hero-dot-matrix-static.avif" 1x type("image/avif"),"hero-dot-matrix-static.webp" 1x type("image/webp"),"hero-dot-matrix-static.png" 1x type("image/png"));
+    background-position:50% 0%;background-repeat:no-repeat;background-size:cover;
+    -webkit-mask-image:radial-gradient(150% 120% at 74% 12%,#000 0%,#000 30%,rgba(0,0,0,.4) 56%,transparent 78%);
+    mask-image:radial-gradient(150% 120% at 74% 12%,#000 0%,#000 30%,rgba(0,0,0,.4) 56%,transparent 78%);
+    -webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;}
+  .s-frame{position:absolute;z-index:6;inset:34px;border:1px solid rgba(180,205,255,.14);border-radius:6px;pointer-events:none;}
+  .s-head{position:absolute;z-index:7;top:56px;left:88px;right:88px;display:flex;justify-content:space-between;align-items:center;
+    font-family:'DM Mono',monospace;font-size:18px;letter-spacing:.12em;}
+  .s-head .wm{color:#fff;font-weight:500;}
+  .s-head .wm sup{color:var(--cyan);font-size:.6em;top:-.55em;}
+  .s-head .topic{color:rgba(220,232,255,.62);text-transform:uppercase;}
+  .s-title{position:absolute;z-index:7;left:88px;right:96px;top:150px;
+    font-weight:600;font-size:74px;line-height:1.05;letter-spacing:-.02em;color:#fff;text-shadow:0 2px 30px rgba(0,0,0,.5);}
+  .grad{background:linear-gradient(105deg,#39e8ff,#00ff99 52%,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:saturate(1.15) brightness(1.1) drop-shadow(0 0 22px rgba(57,232,255,.25));}
+  .s-kick{font-family:'DM Mono',monospace;font-weight:500;font-size:22px;letter-spacing:.16em;}
+  .s-steps{position:absolute;z-index:7;left:104px;right:96px;top:404px;bottom:188px;display:flex;flex-direction:column;justify-content:space-between;
+    border-left:3px solid transparent;border-image:linear-gradient(180deg,#39e8ff,#00ff99,#a855f7) 1;filter:drop-shadow(0 0 10px rgba(0,255,153,.25));}
+  .s-step{display:flex;gap:22px;align-items:baseline;padding-left:28px;}
+  .s-num{font-family:'DM Mono',monospace;font-size:26px;color:var(--dim);letter-spacing:.05em;min-width:42px;}
+  .s-stext{font-family:'DM Sans',sans-serif;font-size:38px;font-weight:500;color:#eaf2ff;line-height:1.12;}
+  .s-glyphs{position:absolute;z-index:7;left:88px;right:88px;top:838px;display:flex;align-items:center;gap:22px;font-family:'DM Mono',monospace;}
+  .s-glyphs .g{font-size:58px;color:var(--cyan);filter:drop-shadow(0 0 16px rgba(57,232,255,.45));line-height:1;}
+  .s-glyphs .arr{font-size:30px;color:var(--dim);}
+  .s-glyphs .gl{margin-left:14px;font-size:22px;letter-spacing:.06em;color:var(--muted);}
+  .s-half{position:absolute;left:0;right:0;z-index:1;background-size:cover;background-position:50% 50%;}
+  .s-half.top{top:0;height:540px;filter:grayscale(1) contrast(1.03);opacity:.36;}
+  .s-half.bot{top:540px;bottom:0;filter:saturate(.7) contrast(1.03);opacity:.5;}
+  .s-cdiv{position:absolute;z-index:5;left:0;right:0;top:539px;height:2px;background:linear-gradient(90deg,#39e8ff,#00ff99,#a855f7);box-shadow:0 0 18px rgba(0,255,153,.5);}
+  .s-cscrim{position:absolute;inset:0;z-index:2;pointer-events:none;background:
+    linear-gradient(180deg,rgba(6,10,18,.58) 0%,rgba(6,10,18,.14) 26%,rgba(6,10,18,.14) 66%,rgba(6,10,18,.7) 100%);}
+  .s-portrait{position:absolute;z-index:7;left:88px;bottom:120px;width:120px;height:120px;border-radius:50%;object-fit:cover;border:2px solid rgba(120,200,255,.5);box-shadow:0 0 30px rgba(57,232,255,.25);}
+  .s-contact{position:absolute;z-index:7;left:232px;right:88px;bottom:120px;font-family:'DM Mono',monospace;}
+  .s-contact .nm{font-family:'Clash Display',sans-serif;font-weight:600;font-size:34px;color:#fff;}
+  .s-contact .role{font-size:19px;color:var(--muted);margin-top:4px;letter-spacing:.04em;}
+  .s-contact .cta{font-size:22px;color:#eaf2ff;margin-top:16px;}
+</style>
+</head>
+<body>
+<div class="stage-wrap"><div class="stage" id="stage"><div class="slide" id="slide"></div></div></div>
+<script>
+const SIDE=1080;
+function fit(){const s=Math.min(innerWidth,innerHeight)/SIDE;stage.style.transform='translate(-50%,-50%) scale('+s+')';}
+addEventListener('resize',fit);fit();
+const PH=['radial-gradient(70% 60% at 72% 30%, rgba(255,176,80,.5), transparent 55%),radial-gradient(90% 80% at 25% 75%, rgba(57,232,255,.35), transparent 60%),linear-gradient(150deg,#0a1626,#05080f)','radial-gradient(60% 55% at 30% 28%, rgba(168,85,247,.5), transparent 55%),radial-gradient(80% 70% at 80% 80%, rgba(0,255,153,.3), transparent 60%),linear-gradient(150deg,#0c1020,#05080f)','radial-gradient(70% 60% at 60% 40%, rgba(255,150,70,.55), transparent 55%),linear-gradient(150deg,#101622,#06080e)','radial-gradient(80% 70% at 70% 25%, rgba(57,232,255,.4), transparent 58%),radial-gradient(60% 60% at 20% 85%, rgba(255,176,80,.35), transparent 60%),linear-gradient(150deg,#0a1322,#05080f)'];
+function bgVal(b){ if(typeof b==='string'&&b) return "url('"+b+"')"; if(typeof b==='number') return PH[b%PH.length]; return PH[0]; }
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function withHL(t,hl){if(!hl)return esc(t);return esc(t).replace(esc(hl),'<span class="grad">'+esc(hl)+'</span>');}
+
+// renderSlide(slide, topic): the headless driver (slides.mjs) calls this per slide.
+// slide.bg = image url/dataURL (A/B/contact). slide.bgTop / slide.bgBot for C. Missing => placeholder.
+function renderSlide(s, topic){
+  const el=document.getElementById('slide'); let h='';
+  if(s.type==='C'){
+    h+='<div class="s-grad"></div>';
+    h+='<div class="s-half top" style="background-image:'+bgVal(s.bgTop!=null?s.bgTop:s.bg)+'"></div>';
+    h+='<div class="s-half bot" style="background-image:'+bgVal(s.bgBot!=null?s.bgBot:(typeof s.bg==="number"?s.bg+1:s.bg))+'"></div>';
+    h+='<div class="s-cscrim"></div><div class="s-dots"></div><div class="s-cdiv"></div>';
+  } else {
+    h+='<div class="s-grad"></div><div class="s-photo" style="background-image:'+bgVal(s.bg)+'"></div><div class="s-scrim"></div><div class="s-dots"></div>';
+  }
+  h+='<div class="s-frame"></div>';
+  h+='<div class="s-head"><span class="wm">Pietro<sup>.works</sup></span><span class="topic">'+esc(topic||'')+'</span></div>';
+  if(s.type==='A'){
+    h+='<div class="s-title">'+withHL(s.title[0],null)+'<br>'+withHL(s.title[1],s.hl)+'</div>';
+    h+='<div class="s-steps">';
+    (s.steps||[]).forEach((t,i)=>{h+='<div class="s-step"><span class="s-num">0'+(i+1)+'</span><span class="s-stext">'+esc(t)+'</span></div>';});
+    h+='</div>';
+  } else if(s.type==='B'){
+    h+='<div class="s-title">'+withHL(s.hero[0],s.hl)+'<br><span style="color:#cdd8ee">'+withHL(s.hero[1],s.hl)+'</span></div>';
+    h+='<div class="s-glyphs">';
+    (s.glyphs||[]).forEach((g,i)=>{h+='<span class="g">'+esc(g)+'</span>'+(i<s.glyphs.length-1?'<span class="arr">→</span>':'');});
+    if(s.glabel) h+='<span class="gl">'+esc(s.glabel)+'</span>'; h+='</div>';
+  } else if(s.type==='C'){
+    h+='<div class="s-title" style="top:150px"><div class="s-kick" style="color:var(--muted)">BEFORE</div>'+esc(s.before)+'</div>';
+    h+='<div class="s-title" style="top:600px"><div class="s-kick" style="color:var(--green)">AFTER</div>'+withHL(s.after,s.hl)+'</div>';
+  } else if(s.type==='contact'){
+    h+='<div class="s-title">'+withHL(s.line[0],null)+'<br>'+withHL(s.line[1],s.hl)+'</div>';
+    h+='<img class="s-portrait" src="pietro-portrait.png" alt=""/>';
+    h+='<div class="s-contact"><div class="nm">'+esc(s.name)+'</div><div class="role">'+esc(s.role)+'</div><div class="cta">'+esc(s.cta)+'</div></div>';
+  }
+  el.innerHTML=h;
+}
+window.renderSlide=renderSlide;
+
+// standalone preview: load slides.json if present, else a built-in sample. ?card=N picks a slide.
+const SAMPLE={topic:'IN_THE_LOOP.MD',slides:[
+ {type:'A',bg:0,title:['Off data entry,','onto review.'],hl:'onto review.',steps:['Capture at the source','Route under tight rules','A human approves every record']},
+ {type:'B',bg:1,hero:['The verifier,','not the typist.'],hl:'The verifier,',glyphs:['○','◆','◎'],glabel:'the human decides'},
+ {type:'C',bg:2,before:'You type every entry.',after:'You approve every entry.',hl:'approve'},
+ {type:'contact',bg:3,line:['Build the private tools','your team wishes existed.'],hl:'wishes existed.',name:'Pietro Impagliazzo',role:'AI Workflow Architect',cta:'Drop me a DM · amazing@pietro.works'}
+]};
+(async function(){
+  let deck=SAMPLE;
+  try{ const r=await fetch('slides.json'); if(r.ok) deck=await r.json(); }catch(e){}
+  window.__deck=deck;
+  const cp=(location.search.match(/[?&]card=(\d+)/)||[])[1];
+  const n=cp!=null?Math.max(0,Math.min(deck.slides.length-1,parseInt(cp,10))):0;
+  renderSlide(deck.slides[n], deck.topic);
+})();
+</script>
+</body></html>

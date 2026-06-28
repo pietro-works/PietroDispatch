@@ -1,0 +1,43 @@
+# slides-sources.yaml — where the evergreen-concept scan looks.
+#
+# Slides are not tied to the day's news. Each run scans the field for a
+# durable concept worth teaching in Pietro's voice: something a hands-on
+# operator keeps needing to understand, still true in a year. This file is the
+# starting map for that scan, not a hard fetch list. Claude searches these with
+# its own web search and fetch. Add or drop as the field shifts.
+#
+# Read three layers each run, then pick what is genuinely evergreen and on-domain.
+
+# 1) Pietro's domain — the concept must sit here, or adjacent.
+domain:
+  - AI workflow orchestration and pipelines
+  - Internal tools and the build-vs-buy line
+  - Human-in-the-loop and verification as a control layer
+  - Browser-native automation and small custom extensions
+  - Agent and prompt design that survives production
+  - Media metadata, review, and QA workflows
+  - The gap between an AI demo and a system people use daily
+
+# 2) Practitioners to learn from — for what is being discussed and how the best
+#    teachers frame it. Study the framing and the engagement, never copy the take.
+practitioners:
+  - Simon Willison — simonwillison.net (tools, practical LLM technique)
+  - Andrej Karpathy — talks and threads (mental models, first principles)
+  - Ethan Mollick (One Useful Thing) — oneusefulthing.org (operator framing)
+  - Nathan Lambert (Interconnects) — interconnects.ai (systems depth)
+  - Latent Space — latent.space (builder practice)
+  - swyx — on the craft of explaining technical work
+  - High-signal AI-engineering voices on LinkedIn and X in automation and agents
+
+# 3) Engagement reference — what makes evergreen technical content land. Study
+#    structure, hook, and clarity from the best, to inform format not content.
+engagement_reference:
+  - Top-saved LinkedIn carousels and posts in AI engineering and automation
+  - Evergreen explainer threads that keep getting shared months later
+  - The clearest "how X actually works" pieces in the space
+  - What questions keep recurring in communities (HN, r/LocalLLaMA, dev forums)
+
+# Bias the pick toward: a real mechanism Pietro can explain from experience, a
+# systems or architecture angle, a contrarian-but-correct read, and durability.
+# Skip: anything tied to a dated release, hype with no mechanism, or a concept
+# Pietro cannot ground in his own work. Evergreen and authoritative, or skip it.

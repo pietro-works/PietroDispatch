@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>IN_THE_LOOP.MD — Pietro.works Sliders preview</title>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#060a12;--bg2:#0a0f1e;--ink:#eef4ff;--muted:#7a8fb8;--dim:#3d4e6e;
+    --cyan:#39e8ff;--green:#00ff99;--purple:#a855f7;
+    --line:rgba(57,232,255,.12);--line-s:rgba(57,232,255,.24);
+    --grad:linear-gradient(105deg,var(--cyan),var(--green) 50%,var(--purple));
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(ellipse 70% 60% at 18% 8%,rgba(57,232,255,.10),transparent 58%),
+      radial-gradient(ellipse 60% 60% at 88% 12%,rgba(168,85,247,.10),transparent 58%),
+      linear-gradient(160deg,#05080f,#070b16 56%,#060a12);
+    color:var(--ink);font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+    min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:40px 20px;overflow-x:hidden;
+  }
+  .head{width:100%;max-width:620px;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid var(--line-s);
+    background:color-mix(in srgb,var(--cyan) 6%,transparent);border-radius:999px;padding:7px 15px;
+    font-family:"DM Mono",monospace;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:#c6d4ef}
+  .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 9px var(--green)}
+  .count{font-family:"DM Mono",monospace;font-size:13px;letter-spacing:.10em;color:var(--dim)}
+  .count b{color:var(--cyan);font-weight:500}
+  .stage{position:relative;width:100%;max-width:620px;aspect-ratio:1/1;border-radius:22px;overflow:hidden;
+    border:1px solid var(--line);box-shadow:0 50px 100px -40px rgba(0,0,0,.85);background:var(--bg2);
+    touch-action:pan-y;user-select:none;cursor:grab}
+  .stage:active{cursor:grabbing}
+  .track{display:flex;height:100%;transition:transform .5s var(--ease)}
+  .slide{min-width:100%;height:100%}
+  .slide img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+  .glow{position:absolute;inset:0;pointer-events:none;border-radius:22px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+  .nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;
+    border:1px solid var(--line-s);background:rgba(8,14,28,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    color:var(--ink);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:.16s var(--ease);z-index:3}
+  .nav:hover{border-color:var(--cyan);background:rgba(8,14,28,.8)}
+  .nav.prev{left:14px}.nav.next{right:14px}
+  .dots{display:flex;gap:9px;margin-top:20px}
+  .dots button{width:9px;height:9px;border-radius:50%;border:none;background:var(--dim);cursor:pointer;padding:0;transition:.2s var(--ease)}
+  .dots button.on{width:26px;border-radius:6px;background:var(--cyan);box-shadow:0 0 10px rgba(57,232,255,.5)}
+  .cap{margin-top:18px;max-width:560px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55;min-height:44px}
+  .cap b{color:#cdd8ec;font-weight:500}
+  .foot{margin-top:22px;font-family:"DM Mono",monospace;font-size:12.5px;letter-spacing:.08em;color:var(--dim)}
+  .foot sup{color:var(--cyan);font-size:.62em;top:-.5em}
+  @media (max-width:560px){ .nav{width:40px;height:40px} h1{font-size:40px} }
+</style>
+</head>
+<body>
+  <div class="head">
+    <span class="eyebrow"><span class="dot"></span> IN_THE_LOOP.MD</span>
+    <span class="count"><b id="cur">01</b> / 04</span>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="track" id="track">
+      <div class="slide"><img src="assets/sliders/inloop-01.jpg" alt="Hero slide: same output, a third of the cost"/></div>
+      <div class="slide"><img src="assets/sliders/inloop-02.jpg" alt="Steps slide: four ways to cut the bill"/></div>
+      <div class="slide"><img src="assets/sliders/inloop-03.jpg" alt="Before and after: one big model vs the right model for each job"/></div>
+      <div class="slide"><img src="assets/sliders/inloop-04.jpg" alt="Contact slide: build the private tools your team wishes existed"/></div>
+    </div>
+    <div class="glow"></div>
+    <div class="nav prev" id="prev" aria-label="Previous">&#8249;</div>
+    <div class="nav next" id="next" aria-label="Next">&#8250;</div>
+  </div>
+
+  <div class="dots" id="dots"></div>
+  <p class="cap" id="cap"></p>
+  <div class="foot">Rendered by slides.mjs · a Pietro<sup>.works</sup> carousel</div>
+
+<script>
+  const caps = [
+    "Hero. One sharp claim, the gradient on the line that carries the weight, a glyph row for the moving parts.",
+    "Steps. The method as an ordered spine that fits any step count.",
+    "Before and after. The renderer desaturates the <b>before</b>; the <b>after</b> lands in full color.",
+    "Close. The contact card that ends every deck in the series."
+  ];
+  const track=document.getElementById('track'), dotsWrap=document.getElementById('dots'),
+        cur=document.getElementById('cur'), cap=document.getElementById('cap');
+  let i=0; const n=4;
+  for(let k=0;k<n;k++){const b=document.createElement('button');b.onclick=()=>go(k);dotsWrap.appendChild(b);}
+  const dots=[...dotsWrap.children];
+  function go(k){ i=(k+n)%n; track.style.transform='translateX(-'+(i*100)+'%)';
+    cur.textContent=String(i+1).padStart(2,'0');
+    dots.forEach((d,j)=>d.classList.toggle('on',j===i)); cap.innerHTML=caps[i]; }
+  document.getElementById('next').onclick=()=>go(i+1);
+  document.getElementById('prev').onclick=()=>go(i-1);
+  document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(i+1);if(e.key==='ArrowLeft')go(i-1);});
+  // drag / swipe
+  const stage=document.getElementById('stage'); let x0=null;
+  const down=x=>x0=x, up=x=>{if(x0===null)return;const d=x-x0;if(Math.abs(d)>40)go(i+(d<0?1:-1));x0=null;};
+  stage.addEventListener('pointerdown',e=>down(e.clientX));
+  stage.addEventListener('pointerup',e=>up(e.clientX));
+  stage.addEventListener('pointerleave',()=>x0=null);
+  stage.addEventListener('touchstart',e=>down(e.touches[0].clientX),{passive:true});
+  stage.addEventListener('touchend',e=>up(e.changedTouches[0].clientX));
+  go(0);
+</script>
+</body>
+</html>

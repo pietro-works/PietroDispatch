@@ -1,0 +1,34 @@
+# sources.yaml — where the daily pool comes from.
+#
+# Tiers let curation prefer primary sources:
+#   tier 1  primary labs and primary analysis
+#   tier 2  high-signal independents and curated dailies
+#   tier 3  broad and firehose
+#
+# Claude pulls these with its own web search and fetch, so there is no feed
+# parsing to maintain. Treat the list as a starting set of where to look, not a
+# hard fetch list. Add or drop as the signal changes.
+
+primary:
+  - Simon Willison — simonwillison.net
+  - Import AI (Jack Clark) — importai.substack.com
+  - Anthropic news — anthropic.com/news
+  - OpenAI blog — openai.com/blog
+  - Google DeepMind blog — deepmind.google/blog
+  - Hugging Face blog — huggingface.co/blog
+
+independents_and_dailies:
+  - Latent Space — latent.space
+  - Interconnects (Nathan Lambert) — interconnects.ai
+  - One Useful Thing (Ethan Mollick) — oneusefulthing.org
+  - Last Week in AI — lastweekin.ai
+  - AI News (smol.ai) — buttondown.com/ainews
+  - The Batch (DeepLearning.AI) — deeplearning.ai/the-batch
+
+broad:
+  - Hacker News front page, AI and LLM and agent stories — news.ycombinator.com
+  - arXiv recent in cs.AI, cs.LG, cs.CL — arxiv.org
+  - MIT Technology Review — technologyreview.com
+
+# Bias the read toward stories with a mechanism, a systems angle, or a
+# contrarian take, per curation.md. Skip pure funding and announcement noise.

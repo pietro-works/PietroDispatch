@@ -1,0 +1,16 @@
+{
+  "name": "pietro-dispatch",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily AI-news DISPATCH cards: curate, write, generate, render, deliver to Drive.",
+  "scripts": {
+    "images": "node pipeline/generate-images.mjs",
+    "render": "node renderer/news.mjs"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "sharp": "^0.33.0"
+  }
+}
