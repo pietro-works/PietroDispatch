@@ -41,6 +41,7 @@ function parseArgs() {
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function mimeType(p){const e=extname(p).toLowerCase();return ({'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.webp':'image/webp','.avif':'image/avif','.woff2':'font/woff2','.jpg':'image/jpeg','.jpeg':'image/jpeg'})[e]||'application/octet-stream';}
 async function startStaticServer(root){
+  root=resolve(root);
   const server=createServer(async(req,res)=>{ try{
     const rel=decodeURIComponent(new URL(req.url,'http://127.0.0.1').pathname);
     const path=resolve(root,`.${rel==='/'?'/index.html':rel}`);
