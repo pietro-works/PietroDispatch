@@ -1,7 +1,7 @@
 # Slides generation
 
 You design one slide deck that teaches the curated evergreen concept, in Pietro's voice
-(`PIETRO_WORKS_VOICE.MD` sections 1 to 3, filtered by `HUMANIZE.md`). A deck is a short
+(`PIETRO_WORKS_VOICE.MD` sections 1 to 4, filtered by `HUMANIZE.md`; §4 holds the emoji carve-out). A deck is a short
 LinkedIn carousel: 2 to 4 content slides chosen by best fit, then a Contact slide. Output
 the data the renderer and image pipeline consume. Ground every claim in Pietro's real
 experience and first principles, never a fetched article. No em dashes.
@@ -49,6 +49,16 @@ darker band low where text sits). The image carries mood, never words or literal
 Pick 2 to 4 geometric marks that stand for the concept's moving parts in order, and a 2 to 4
 word `glabel` naming the punchline (e.g. for human-in-the-loop: ○ ◆ ◎ , "the human decides").
 
+## Caption
+
+The post body under the carousel. It FRAMES the deck; the slides carry the teaching, so the caption never repeats the structured breakdown. This is where emoji formatting goes wrong when it is left vague, so it is pinned here.
+
+- **Form is narrative, not the four-marker spine.** Open with 💠, always. It is the brand signature and it leads every feed post. Then frame the concept in plain prose, nod to what the deck walks through, and close on a soft DM invite plus the hashtag line. Do not use ⚡ ⚙️ 🧠 in a slides caption; those are the structured card spine and the deck already carries the breakdown. A single thematic emoji is allowed only if it genuinely marks a turn, never as a structural marker and never on every line.
+- **The 💠 is mandatory and survives the humanize pass.** `HUMANIZE.md` says no emoji; that blanket rule does not apply to the brand signature 💠 or the voice markers (see `PIETRO_WORKS_VOICE.MD` §4: "Every feed post opens with 💠. It is the signature and it always leads"). The voice carve-out wins over the generic ban.
+- **Ground it, do not restate it.** Every number carries its task, baseline, and scope. No em dashes, no banned words. Frame why the deck matters; do not repeat the slide text back.
+- **Hashtags: the same core on every deck.** `#OpenToDisruption #ArchitectToDeliver #ZeroBloatEngineering #PietroWorks` plus one or two topical tags. Not a bespoke set per post.
+- **Shape.** A 💠 hook line, one or two short framing paragraphs, the soft DM invite ("My DMs are open, or amazing@pietro.works"), then the hashtag line.
+
 ## Output
 
 Return strict JSON, nothing else, no fences. Three top-level keys:
@@ -77,7 +87,7 @@ Return strict JSON, nothing else, no fences. Three top-level keys:
     { "id": "03b", "image_prompt": "...after state..." },
     { "id": "04", "image_prompt": "..." }
   ],
-  "caption": "The LinkedIn post body that goes under the carousel: a short DISPATCH-form take in Pietro's voice that frames the deck and ends on a soft DM invite, with the hashtag line. Newlines as \\n."
+  "caption": "The post body that frames the deck, built per the Caption section above: opens with 💠, narrative framing not the four-marker spine, one or two short paragraphs, a soft DM invite, then the core hashtag line. Newlines as \\n."
 }
 ```
 
