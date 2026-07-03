@@ -53,3 +53,10 @@ Before the first upload of a session that writes to Drive, confirm with Pietro. 
 - Caption files contain the post body only, not the headline; the headline lives on the card.
 - When re-running the images for a date that already produced cards (a look change or a reroll), archive the current `bg-*` and `post-*` as `*_old.png` first, in both `work/<DATE>/` and the Drive folder, then regenerate. Nothing gets overwritten without a copy.
 - Keep everything you write free of em dashes.
+
+## Enterprise
+
+This module (`news`) runs under Pietro Enterprise (sibling repo `pietro-enterprise`). Two things are non-optional there:
+
+- **Contract.** Deliver as `Pietro Dispatch/<DATE>/candidate-<NN>-<slug>/` with `post-1/2.png`, `caption-1/2.txt`, `meta.json`. Studio's scanner silently skips anything else. Prove it: `node ../pietro-enterprise/registry/contracts/validate-contract.mjs "<folder>"`.
+- **Two gates.** Before delivery, the output passes Brand Guardian (voice, brand, grounding) then Validator (contract, dimensions, will Studio index it). See `pietro-enterprise/skills/review`.

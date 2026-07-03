@@ -71,3 +71,7 @@ Before the first upload of a session that writes to Drive, confirm with Pietro. 
 - LinkedIn document best practice: square pages, keep the deck tight (3 to 5 slides), PDF.
 - On a re-run for the same date and slug, archive existing `post-*`/`slides.pdf` as `*_old` first.
 - Keep everything you write free of em dashes.
+
+## Enterprise
+
+This module (`slides`) runs under Pietro Enterprise (sibling repo `pietro-enterprise`). Deliver as `Pietro Slides/<DATE>-<slug>/` with `slides.pdf`, `post-01.png`, `caption.txt`, `meta.json`, or Studio's scanner skips it. Prove it with `node ../pietro-enterprise/registry/contracts/validate-contract.mjs "<folder>"`, and pass the two gates in `pietro-enterprise/skills/review` before delivery.
