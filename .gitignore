@@ -3,3 +3,4 @@ node_modules/
 .DS_Store
 renderer/news.tsv
 .change-log.tsv
+.claude/launch.json
