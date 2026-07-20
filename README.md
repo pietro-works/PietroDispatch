@@ -168,6 +168,7 @@ Both feed generators run on a schedule now, firing locally and delivering to Dri
 
 [pietro.works](https://pietro.works) · [linkedin.com/in/pietro-works](https://linkedin.com/in/pietro-works)
 
-Designed, written, and rendered for Pietro<sup>.works</sup>. The brand system is proprietary, the pipeline is shared as a reference build.
+Designed, written, and rendered for Pietro<sup>.works</sup>.<br>
+The brand system is proprietary, the pipeline is shared as a reference build.
 
 </div>
