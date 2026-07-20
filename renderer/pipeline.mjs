@@ -6,10 +6,12 @@
  * to regenerate the diagram used in the README and docs.
  *
  * Usage:
- *   node renderer/pipeline.mjs [--out docs/assets/pipeline.webp] [--width 1600] [--chrome <path>]
+ *   node renderer/pipeline.mjs [--data spec.json] [--out out.webp] [--format png|webp] [--width 1600] [--chrome <path>]
  *
- * The template is 1600x548 CSS px; it renders at deviceScaleFactor 2 and is downscaled to --width
- * (default 1600) as webp via sharp. Background, fonts and the dot-matrix load from renderer/.
+ * Without --data it renders the default content pipeline (docs/assets/pipeline.webp). With --data it
+ * injects a fluxo spec (see renderFluxo in pipeline.html): { kick, flow, cards[], footL, footR, bg }.
+ * spec.bg is an image path (absolute or relative to the spec file); it is inlined as a data URL.
+ * The template is 1600x548 CSS px, renders at deviceScaleFactor 2, and is written to --out at --width.
  */
 import { createServer } from 'node:http';
 import { mkdtemp, readFile, rm, stat, writeFile, mkdir, access } from 'node:fs/promises';
@@ -25,13 +27,16 @@ const PAGE = 'pipeline.html';
 const CSS_W = 1600, CSS_H = 548;
 
 function parseArgs() {
-  const a = process.argv.slice(2); const o = { out: resolve(RENDERER_DIR, '../docs/assets/pipeline.webp'), width: 1600, chrome: null };
+  const a = process.argv.slice(2); const o = { out: resolve(RENDERER_DIR, '../docs/assets/pipeline.webp'), width: 1600, chrome: null, data: null, format: null };
   for (let i = 0; i < a.length; i += 1) {
     if (a[i] === '--out') o.out = resolve(a[++i]);
     else if (a[i] === '--width') o.width = Number(a[++i]);
     else if (a[i] === '--chrome') o.chrome = a[++i];
+    else if (a[i] === '--data') o.data = resolve(a[++i]);
+    else if (a[i] === '--format') o.format = a[++i];
     else throw new Error(`Unknown argument: ${a[i]}`);
   }
+  if (!o.format) o.format = (extname(o.out).slice(1) || 'webp').toLowerCase();
   return o;
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -93,14 +98,27 @@ async function main() {
     await page('Emulation.setDeviceMetricsOverride', { width: CSS_W, height: CSS_H, deviceScaleFactor: 2, mobile: false });
     const load = cdp.once('Page.loadEventFired', sessionId);
     await page('Page.navigate', { url: `http://127.0.0.1:${port}/${PAGE}` }); await load;
-    await page('Runtime.evaluate', { expression: `(async()=>{await document.fonts.ready;await new Promise(r=>setTimeout(r,500));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));})()`, awaitPromise: true });
+    if (o.data) {
+      const spec = JSON.parse(await readFile(o.data, 'utf8'));
+      if (spec.bg) {
+        const bgPath = resolve(dirname(o.data), spec.bg);
+        const buf = await readFile(bgPath);
+        const ext = extname(bgPath).slice(1).toLowerCase();
+        spec.bgUrl = `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${buf.toString('base64')}`;
+        delete spec.bg;
+      }
+      await page('Runtime.evaluate', { expression: `window.__FLUXO=${JSON.stringify(spec)};renderFluxo(window.__FLUXO);` });
+    }
+    await page('Runtime.evaluate', { expression: `(async()=>{await document.fonts.ready;await new Promise(r=>setTimeout(r,600));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));})()`, awaitPromise: true });
     const b = await page('Runtime.evaluate', { expression: `(()=>{const r=document.getElementById('diagram').getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};})()`, returnByValue: true });
     const { x, y, width, height } = b.result.value;
     const shot = await page('Page.captureScreenshot', { format: 'png', fromSurface: true, captureBeyondViewport: false, clip: { x, y, width, height, scale: 1 } });
     const png = Buffer.from(shot.data, 'base64');
-    await sharp(png).resize({ width: o.width }).webp({ quality: 88, effort: 6 }).toFile(o.out);
+    const pipe = sharp(png).resize({ width: o.width });
+    if (o.format === 'png') await pipe.png({ compressionLevel: 9 }).toFile(o.out);
+    else await pipe.webp({ quality: 88, effort: 6 }).toFile(o.out);
     const meta = await sharp(o.out).metadata();
-    console.log(`wrote ${o.out} (${meta.width}x${meta.height} webp)`);
+    console.log(`wrote ${o.out} (${meta.width}x${meta.height} ${o.format})`);
   } finally {
     try { await cdp.call('Browser.close'); } catch {}
     await new Promise((r) => { const t = setTimeout(() => { try { chrome.proc.kill('SIGKILL'); } catch {} r(); }, 3000); chrome.proc.once('exit', () => { clearTimeout(t); r(); }); });

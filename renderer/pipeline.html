@@ -1,5 +1,7 @@
-<!DOCTYPE html><!-- Pietro.works pipeline fluxogram template. Reusable diagram renderer for README/docs.
-     Render with: node renderer/pipeline.mjs  (writes docs/assets/pipeline.webp). Edit the cards/glyphs below. --><html lang="en"><head>
+<!DOCTYPE html><!-- Pietro.works pipeline / fluxogram template. Reusable 6-card flow diagram for README and LinkedIn.
+     Data-driven: renderFluxo(spec) builds the cards from a spec; the default spec is the content pipeline.
+     Render with: node renderer/pipeline.mjs [--data spec.json] [--out out.png] [--format png|webp]. -->
+<html lang="en"><head>
 <meta charset="utf-8"/>
 <style>
 @font-face{font-family:'Clash Display';src:url('fonts/clash-600.woff2') format('woff2');font-weight:600;font-display:block;}
@@ -50,6 +52,7 @@
     box-shadow:0 0 0 1px rgba(0,255,153,.06),0 26px 70px -28px rgba(0,180,140,.45);}
   .card.gate .glyph{color:#fff;filter:drop-shadow(0 0 16px rgba(0,255,153,.55));}
   .card.gate .glyph svg{stroke:url(#gg);}
+  .card.gate .glyph.filled svg{fill:url(#gg);stroke:url(#gg);}
   .tag{align-self:flex-start;margin-top:14px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;
     padding:5px 11px;border-radius:6px;color:#04140d;font-weight:500;
     background:linear-gradient(105deg,var(--cyan),var(--green) 55%,var(--purple));}
@@ -63,59 +66,81 @@
 <div id="diagram">
   <div class="grad"></div><div class="photo"></div><div class="scrim"></div><div class="dots"></div><div class="frame"></div>
   <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#39e8ff"/><stop offset=".55" stop-color="#00ff99"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs></svg>
-  <div class="wrap">
-    <header>
-      <span class="kick"><span class="d"></span>The pipeline</span>
-      <span class="flow">generate · <b>gate</b> · ship</span>
-    </header>
-    <div class="row">
-      <div class="card">
-        <span class="num">01</span>
-        <div class="glyph"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg></div>
-        <div class="name">Curate</div>
-        <div class="lines">sources in full<br><span class="hi">no unsourced claim</span></div>
-      </div>
-      <span class="arr">→</span>
-      <div class="card">
-        <span class="num">02</span>
-        <div class="glyph"><svg viewBox="0 0 24 24"><polyline points="9 7 4 12 9 17"/><polyline points="15 7 20 12 15 17"/></svg></div>
-        <div class="name">Write</div>
-        <div class="lines">brand voice, a file<br><span class="hg">humanized</span>, not raw</div>
-      </div>
-      <span class="arr">→</span>
-      <div class="card">
-        <span class="num">03</span>
-        <div class="glyph"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M4 17l4.5-4.5 3.5 3.5 3-3 5 5"/></svg></div>
-        <div class="name">Illustrate</div>
-        <div class="lines">GPT Image 2<br>one warm accent</div>
-      </div>
-      <span class="arr">→</span>
-      <div class="card">
-        <span class="num">04</span>
-        <div class="glyph"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></div>
-        <div class="name">Render</div>
-        <div class="lines">headless Chrome<br>2160, <span class="hi">fit-measured</span></div>
-      </div>
-      <span class="arr">→</span>
-      <div class="card gate">
-        <span class="num">05</span>
-        <div class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 9-4-1.3-7-4.4-7-9V6l7-3z"/><polyline points="8.8 12 11.2 14.4 15.6 9.6"/></svg></div>
-        <div class="name">Gate</div>
-        <div class="lines"><span class="hi">two adversarial passes</span><br>voice, then contract</div>
-        <span class="tag">a fail is a rewrite</span>
-      </div>
-      <span class="arr">→</span>
-      <div class="card">
-        <span class="num">06</span>
-        <div class="glyph filled"><svg viewBox="-34 -26 580 580"><g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor"><path d="M2222 4535 c-538 -82 -1005 -421 -1245 -903 -61 -121 -111 -263 -141 -394 -4 -19 -13 -28 -26 -28 -33 0 -182 -51 -255 -88 -151 -75 -287 -192 -374 -321 -63 -92 -127 -234 -153 -337 -32 -127 -32 -341 0 -468 47 -187 129 -333 262 -467 133 -134 258 -209 445 -266 l90 -27 397 -4 c437 -4 441 -3 473 58 20 40 19 79 -5 118 -37 60 -52 62 -437 62 -315 0 -356 2 -432 20 -232 56 -436 234 -528 460 -183 453 118 963 609 1032 116 16 138 38 162 168 107 561 536 1001 1105 1131 137 32 375 37 526 11 462 -79 837 -360 1047 -783 29 -59 60 -106 75 -116 19 -13 60 -19 152 -24 191 -12 331 -56 479 -152 145 -95 252 -217 332 -380 75 -153 95 -241 95 -417 0 -175 -20 -262 -95 -416 -109 -224 -293 -392 -519 -474 -143 -52 -206 -60 -487 -60 -284 0 -309 -4 -344 -62 -36 -59 -18 -133 40 -163 42 -22 529 -22 656 0 428 74 793 384 929 789 48 143 58 211 58 386 0 175 -10 243 -58 386 -146 435 -567 766 -1018 801 l-78 6 -29 57 c-16 31 -55 97 -89 146 -242 362 -621 615 -1057 705 -131 27 -428 34 -562 14z"/><g transform="translate(0,571) scale(1,1.195) translate(0,-571)"><path d="M2525 2709 c-41 -12 -821 -793 -830 -832 -23 -91 56 -171 143 -147 29 7 98 71 319 292 l283 283 0 -819 c0 -897 -2 -863 59 -899 36 -21 83 -22 121 -2 63 32 60 -6 60 897 l0 823 283 -283 c297 -297 314 -310 380 -291 70 19 107 102 74 165 -22 41 -799 814 -819 814 -9 0 -22 2 -30 4 -7 2 -26 0 -43 -5z"/></g></g></svg></div>
-        <div class="name">Deliver</div>
-        <div class="lines">only what passed<br>into a dated folder</div>
-      </div>
-    </div>
-    <footer>
-      <span>three topics · two variations each</span>
-      <span class="value">nothing ships that <b>fails a check</b></span>
-    </footer>
-  </div>
+  <div class="wrap" id="wrap"></div>
 </div>
+<script>
+// Contextual glyph library. Stroke line-icons unless {filled:true}. Add more as needed.
+const G = {
+  search:{s:'<circle cx="10.5" cy="10.5" r="6"/><line x1="15" y1="15" x2="20" y2="20"/>'},
+  code:{s:'<polyline points="9 7 4 12 9 17"/><polyline points="15 7 20 12 15 17"/>'},
+  image:{s:'<rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M4 17l4.5-4.5 3.5 3.5 3-3 5 5"/>'},
+  frame:{s:'<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/>'},
+  shield:{s:'<path d="M12 3l7 3v5c0 4.6-3 7.7-7 9-4-1.3-7-4.4-7-9V6l7-3z"/><polyline points="8.8 12 11.2 14.4 15.6 9.6"/>'},
+  lock:{s:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'},
+  gauge:{s:'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>'},
+  barchart:{s:'<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>'},
+  send:{s:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'},
+  eye:{s:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>'},
+  dollar:{s:'<circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/>'},
+  wrench:{s:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'},
+  user:{s:'<circle cx="12" cy="7.5" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/>'},
+  usercheck:{s:'<circle cx="9" cy="7.5" r="4"/><path d="M2.5 21v-1a5 5 0 0 1 5-5h3a5 5 0 0 1 2 .4"/><polyline points="15.5 12.5 18 15 22 10.5"/>'},
+  refresh:{s:'<path d="M3 12a9 9 0 0 1 9-9 9.7 9.7 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.7 9.7 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>'},
+  inbox:{s:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'},
+  filter:{s:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>'},
+  flag:{s:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>'},
+  database:{s:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>'},
+  listchecks:{s:'<path d="m3 7 2 2 4-4"/><path d="m3 17 2 2 4-4"/><line x1="13" y1="6" x2="21" y2="6"/><line x1="13" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/>'},
+  activity:{s:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'},
+  cpu:{s:'<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/>'},
+  zap:{s:'<path d="M13 2 4 14h7l-2 8 9-12h-7l2-8z"/>'},
+  layers:{s:'<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'},
+  gitbranch:{s:'<line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>'},
+  target:{s:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>'},
+  cloud:{filled:true, vb:'-34 -26 580 580', s:'<g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor"><path d="M2222 4535 c-538 -82 -1005 -421 -1245 -903 -61 -121 -111 -263 -141 -394 -4 -19 -13 -28 -26 -28 -33 0 -182 -51 -255 -88 -151 -75 -287 -192 -374 -321 -63 -92 -127 -234 -153 -337 -32 -127 -32 -341 0 -468 47 -187 129 -333 262 -467 133 -134 258 -209 445 -266 l90 -27 397 -4 c437 -4 441 -3 473 58 20 40 19 79 -5 118 -37 60 -52 62 -437 62 -315 0 -356 2 -432 20 -232 56 -436 234 -528 460 -183 453 118 963 609 1032 116 16 138 38 162 168 107 561 536 1001 1105 1131 137 32 375 37 526 11 462 -79 837 -360 1047 -783 29 -59 60 -106 75 -116 19 -13 60 -19 152 -24 191 -12 331 -56 479 -152 145 -95 252 -217 332 -380 75 -153 95 -241 95 -417 0 -175 -20 -262 -95 -416 -109 -224 -293 -392 -519 -474 -143 -52 -206 -60 -487 -60 -284 0 -309 -4 -344 -62 -36 -59 -18 -133 40 -163 42 -22 529 -22 656 0 428 74 793 384 929 789 48 143 58 211 58 386 0 175 -10 243 -58 386 -146 435 -567 766 -1018 801 l-78 6 -29 57 c-16 31 -55 97 -89 146 -242 362 -621 615 -1057 705 -131 27 -428 34 -562 14z"/><g transform="translate(0,571) scale(1,1.195) translate(0,-571)"><path d="M2525 2709 c-41 -12 -821 -793 -830 -832 -23 -91 56 -171 143 -147 29 7 98 71 319 292 l283 283 0 -819 c0 -897 -2 -863 59 -899 36 -21 83 -22 121 -2 63 32 60 -6 60 897 l0 823 283 -283 c297 -297 314 -310 380 -291 70 19 107 102 74 165 -22 41 -799 814 -819 814 -9 0 -22 2 -30 4 -7 2 -26 0 -43 -5z"/></g></g>'},
+};
+
+function glyphHtml(name){
+  const g = G[name] || G.frame;
+  return '<div class="glyph'+(g.filled?' filled':'')+'"><svg viewBox="'+(g.vb||'0 0 24 24')+'">'+g.s+'</svg></div>';
+}
+
+// renderFluxo(spec): build the flow. spec = { kick, flow, cards:[{num,glyph,name,l1,l2,hero,tag}], footL, footR, bgUrl, bgPos, bgOpacity }
+function renderFluxo(spec){
+  const s = spec || DEFAULT;
+  const photo = document.querySelector('.photo');
+  if(s.bgUrl) photo.style.backgroundImage = "url('"+s.bgUrl+"')";
+  photo.style.backgroundPosition = s.bgPos || '43% 30%';
+  if(s.bgOpacity!=null) photo.style.opacity = s.bgOpacity;
+  const cards = s.cards.map(function(c){
+    return '<div class="card'+(c.hero?' gate':'')+'">'
+      + '<span class="num">'+c.num+'</span>'
+      + glyphHtml(c.glyph)
+      + '<div class="name">'+c.name+'</div>'
+      + '<div class="lines">'+c.l1+'<br>'+c.l2+'</div>'
+      + (c.tag?'<span class="tag">'+c.tag+'</span>':'')
+      + '</div>';
+  }).join('<span class="arr">→</span>');
+  document.getElementById('wrap').innerHTML =
+      '<header><span class="kick"><span class="d"></span>'+s.kick+'</span><span class="flow">'+s.flow+'</span></header>'
+    + '<div class="row">'+cards+'</div>'
+    + '<footer><span>'+s.footL+'</span><span class="value">'+s.footR+'</span></footer>';
+}
+
+// DEFAULT spec = the content pipeline shown in the README.
+const DEFAULT = {
+  kick:'The pipeline', flow:'generate · <b>gate</b> · ship',
+  footL:'three topics · two variations each', footR:'nothing ships that <b>fails a check</b>',
+  cards:[
+    {num:'01',glyph:'search',name:'Curate',l1:'sources in full',l2:'<span class="hi">no unsourced claim</span>'},
+    {num:'02',glyph:'code',name:'Write',l1:'brand voice, a file',l2:'<span class="hg">humanized</span>, not raw'},
+    {num:'03',glyph:'image',name:'Illustrate',l1:'GPT Image 2',l2:'one warm accent'},
+    {num:'04',glyph:'frame',name:'Render',l1:'headless Chrome',l2:'2160, <span class="hi">fit-measured</span>'},
+    {num:'05',glyph:'shield',name:'Gate',hero:true,l1:'<span class="hi">two adversarial passes</span>',l2:'voice, then contract',tag:'a fail is a rewrite'},
+    {num:'06',glyph:'cloud',name:'Deliver',l1:'only what passed',l2:'into a dated folder'},
+  ],
+};
+
+renderFluxo(window.__FLUXO || DEFAULT);
+</script>
 </body></html>
