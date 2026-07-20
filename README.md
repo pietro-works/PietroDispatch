@@ -42,19 +42,21 @@ One day's run. Each column is a story, top row a first take, bottom row a second
 
 ## How it runs
 
-![The pipeline](docs/assets/pipeline.webp)
+![The pipeline: curate, write, illustrate, render, gate, deliver, with the gate as the measured step](docs/assets/pipeline.webp)
 
-Five moves, one command, laptop closed.
+Six moves, one command, laptop closed. The half that matters is not the generating, it is what refuses to ship. Every stage carries a check, and a card that fails one gets held.
 
-**Curate** reads `sources.yaml` and the open web, pulls the strongest candidates in full, and picks three stories with distinct angles. A funding round with no mechanism under it does not make the cut.
+**Curate** reads `sources.yaml` and the open web and pulls the strongest candidates in full, so the writing rests on the mechanism, not a headline. A funding round with nothing under it does not make the cut.
 
-**Write** turns each story into two cards, same news but a different hook, headline, and image. The voice is not a vibe, it is a file: a brand-voice spec plus a humanization pass that strips the usual machine tells.
+**Write** turns each story into two cards, same news but a different hook and cut. The voice is a file, not a vibe: a brand-voice spec plus a humanization pass that strips the machine tells before either card can move.
 
-**Illustrate** sends each background to GPT Image 2, made at 1088 square and cropped to a clean 1080.
+**Illustrate** sends each background to GPT Image 2, one warm accent on a cold frame.
 
-**Render** is the interesting part, so it gets its own section.
+**Render** exports through headless Chrome at 2160, then measures the result. `measureFit` reads the real rendered card and `--check-fit` hard-fails it on the spot: a headline over two lines, a stubby summary, a lone word stranded on a line. A bad layout stops the run, it does not ship soft. The renderer gets its own section below.
 
-**Deliver** assembles a dated folder, one subfolder per story, with both backgrounds, both cards, both captions, and the metadata, then uploads.
+**Gate** is the part I care most about. Two adversarial passes read every card before it is allowed out, one for voice, taste, and grounding, one for contract and dimensions. A fail is a rewrite, not a warning, and the same gate runs across news, slides, and article.
+
+**Deliver** takes only what passed into a dated folder, one subfolder per story, with both backgrounds, both cards, both captions, and the metadata, then uploads.
 
 ## The renderer
 
