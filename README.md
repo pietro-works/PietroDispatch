@@ -95,11 +95,17 @@ Here is one full `IN_THE_LOOP.MD` deck, on right-sizing your model calls:
 
 The deck is also a live component. Open [`docs/sliders-preview.html`](docs/sliders-preview.html) and arrow through it, swipe, or drag. It carries the brand tokens and the gradient accent, with no framework behind it, so it stays a single file you can drop anywhere.
 
+## Article covers, the third track
+
+The third track makes cover banners for LinkedIn articles. Same brand system, same headless Chrome, but the canvas goes wide, 1920 by 1080, and the layout flips. Where the square cards stack text at the bottom, the cover puts the words on the left and lets the image carry the right half. Each run writes two covers for the same article, different metaphor and different headline cut, so there is always a real choice.
+
+This one has no schedule, on purpose. A cover gets made when an article is ready, and it goes up by hand when the article is published.
+
 ## Scheduling and the queue
 
 ![Pietro Studio](docs/assets/studio.webp)
 
-Neither generator waits for someone to press start. Each runs as a scheduled job that fires on its own cadence, builds the dated folder, and drops it in Drive: dispatch on odd days, sliders on a lighter evergreen rhythm.
+The two feed tracks never wait for someone to press start. Each runs as a scheduled job that fires on its own cadence, builds the dated folder, and drops it in Drive: dispatch on odd days, sliders on a lighter evergreen rhythm. Article covers stay off the calendar; one is made on demand when an article is ready.
 
 What comes out flows into a small control room. Studio reads every generated deck and card into one queue, tags each with a status from unscheduled through scheduled to verified, finds the next open slot, and books the approved ones onto LinkedIn. It is a reactive single-page dashboard in the same dark palette as the work it lines up, again with no framework. You pick what ships; the slot engine keeps the calendar.
 
@@ -127,15 +133,17 @@ pietro-dispatch/
     HUMANIZE.md               the anti-machine-tell pass
     curation.md  generation.md          dispatch: pick and write the stories
     slides-curation.md  slides-generation.md   sliders: pick and design the deck
+    article-generation.md     article: write the cover
     slides-sources.yaml       the evergreen scan map
   renderer/
     news.html    news.mjs     dispatch template, 2160 export
     slides.html  slides.mjs   sliders template, 2160 export plus square-PDF stitch
+    article.html article.mjs  article cover template, 1920x1080 export
     fonts/                    self-hosted Clash and DM woff2
     *.png/.webp/.avif         render-time brand assets
   pipeline/
-    generate-images.mjs       GPT Image 2 backgrounds, shared by both
-  .claude/skills/             the dispatch and slides run skills
+    generate-images.mjs       GPT Image 2 backgrounds, shared by all three
+  .claude/skills/             the dispatch, slides, and article run skills
   sources.yaml                the dispatch source pool
   docs/
     sliders-preview.html      the live, swipeable deck
@@ -144,7 +152,7 @@ pietro-dispatch/
 
 ## Status
 
-Both generators run on a schedule now, dispatch on odd days and sliders on an evergreen rhythm, each firing locally and delivering to Drive without a hand on it. Built and refined as a study in AI-assisted rapid iteration: encode the taste once, then let the machine do the repetitive part and keep the human on the decision.
+The two feed generators run on a schedule now, dispatch on odd days and sliders on an evergreen rhythm, each firing locally and delivering to Drive without a hand on it. Article covers are the deliberate exception, generated on demand and attached by hand when the article goes up. Built and refined as a study in AI-assisted rapid iteration: encode the taste once, then let the machine do the repetitive part and keep the human on the decision.
 
 ---
 

@@ -22,7 +22,7 @@ For each topic, write two variations per `prompts/generation.md`. A variation is
 Assign each variation an id `<NN>-<v>`, NN the topic 01 to 03, v the variant 1 or 2. Write under `work/<DATE>/`:
 
 - `prompts.json` — array of `{ "id": "01-1", "image_prompt": "..." }`, six entries.
-- `cards.json` — array of `{ "id": "01-1", "category": "INSIGHT", "headline": "...", "highlight": "...", "summary": "...", "bg": "backgrounds/bg-01-1.png" }`, six entries.
+- `cards.json` — array of `{ "id": "01-1", "category": "INSIGHT", "headline": "...", "highlight": "...", "summary": "...", "bg": "backgrounds/bg-01-1.png" }`, six entries. A card may also carry an optional `headlineSize` (integer px) that caps the headline font size and overrides the renderer's auto-fit. The renderer already holds every headline to at most two lines on its own (three lines is not allowed), so this is rarely needed; reach for it only to pin a particular two-line break you want. Omit it for normal auto-sizing.
 - `captions/caption-<id>.txt` — the post body plus the hashtag line, paste-ready, one file per variation.
 - `meta/<NN>.json` — per topic: slug, angle, source urls, and the two variations' headline, highlight, summary, and image prompt.
 
@@ -34,17 +34,27 @@ Every background follows one fixed look rule: the brand's cool navy and cyan bas
 
 ## Step 5 — Render
 
-Run `node renderer/news.mjs --cards work/<DATE>/cards.json --root work/<DATE> --out work/<DATE>/cards`. It renders each card to `post-<id>.png` at 2160 and validates the dimensions. On macOS with Google Chrome installed it runs locally with no setup; the script resolves the binary from `CHROME_BIN` or the usual locations. Only if no Chromium will launch does the render fork from the master plan apply: upload the backgrounds and `cards.json` to the day's Drive folder and hand off to the local render trigger instead of finishing here.
+Run `node renderer/news.mjs --cards work/<DATE>/cards.json --root work/<DATE> --out work/<DATE>/cards --check-fit`. It renders each card to `post-<id>.png` at 2160 and validates the dimensions. `--check-fit` reads `measureFit()` per card and exits non-zero on any `[fit FAIL]` (headline, summary, or a stray word alone on a line), the same gate slides and article render under. On macOS with Google Chrome installed it runs locally with no setup; the script resolves the binary from `CHROME_BIN` or the usual locations. Only if no Chromium will launch does the render fork from the master plan apply: upload the backgrounds and `cards.json` to the day's Drive folder and hand off to the local render trigger instead of finishing here.
 
 ## Step 6 — Assemble and upload
 
-Before assembling, render a 2-by-3 contact sheet of the six cards and eyeball it: each headline breaks cleanly with no orphan, the accent phrase reads, the summary stays legible over the background, and the warm accent landed. Fix a card before it ships, not after.
+Before assembling, render a 2-by-3 contact sheet of the six cards and eyeball it: each headline sits on one or two lines with no orphan (never three) and breaks balanced with the accent inside those two lines, each summary is exactly two lines with a nearly-full second line, the accent phrase reads, the summary stays legible over the background, and the warm accent landed. The renderer prints the fit measurement per card (`h=<lines>L@<size>px s=<lines>L/<fill>%`) and flags `[fit FAIL]`; treat any flag as a blocker, and run with `--check-fit` to make the render exit non-zero on a violation. Fix a card before it ships, not after.
 
-Build the Drive folder `Pietro Dispatch/<DATE>/`. For each topic create `candidate-<NN>-<slug>/` and place its two backgrounds as `bg-1.png` and `bg-2.png`, its two cards as `post-1.png` and `post-2.png`, its two captions as `caption-1.txt` and `caption-2.txt`, and a `meta.json` from `meta/<NN>.json`. Write `_index.md` at the date root listing the three topics, the angle for each, and the source links.
+Build the Drive folder `pietro-works-env/queue/Pietro Dispatch/<DATE>/`. For each topic create `candidate-<NN>-<slug>/` and place its two backgrounds as `bg-1.png` and `bg-2.png`, its two cards as `post-1.png` and `post-2.png`, its two captions as `caption-1.txt` and `caption-2.txt`, and a `meta.json` from `meta/<NN>.json`. Write `_index.md` at the date root listing the three topics, the angle for each, and the source links.
 
-How you write it depends on where you run. When Drive for Desktop is mounted (a local manual run), assemble the folder directly on the mount at `<My Drive>/Pietro Dispatch/<DATE>/` and let it sync. That avoids pushing multi-megabyte PNGs through the Google Drive connector, which is slow and floods the context with base64. In the cloud routine, where there is no mount, use the connector. Either way, strip any `.DS_Store` macOS drops into the folder before you call it done.
+How you write it depends on where you run. When Drive for Desktop is mounted (a local manual run), assemble the folder directly on the mount at `<My Drive>/pietro-works-env/queue/Pietro Dispatch/<DATE>/` and let it sync. That avoids pushing multi-megabyte PNGs through the Google Drive connector, which is slow and floods the context with base64. In the cloud routine, where there is no mount, use the connector. Either way, strip any `.DS_Store` macOS drops into the folder before you call it done.
+
+Once each candidate is delivered, archive it into the flat archive: `node pipeline/archive-to-dispatch-posts.mjs "<My Drive>/pietro-works-env/queue/Pietro Dispatch/<DATE>/candidate-<NN>-<slug>"`, once per candidate. It copies (never moves) into `pietro-works-env/dispatch-posts/` as the next `news-NNN`, so the queue folder stays intact for Studio.
 
 Before the first upload of a session that writes to Drive, confirm with Pietro. After that, proceed.
+
+## Files and the archive (three homes, one job each)
+
+- **`work/<DATE>/` in this repo is staging only.** It organizes background generation and rendering: `prompts.json`, `cards.json`, `backgrounds/`, `cards/`, `captions/`, `meta/`. It is scratch. Nothing here is the finished asset.
+- **`pietro-works-env/queue/Pietro Dispatch/<DATE>/` is the structured delivery.** Studio scans, schedules, and posts from here. It must match the contract (Step 6).
+- **`pietro-works-env/dispatch-posts/` is the flat unified archive, the final store.** `archive-to-dispatch-posts.mjs` copies each delivered candidate here as `news-NNN.png` (+ `-b` for variation 2), `bg-news-NNN.png` (+ `-b`), and `caption-news-NNN.txt` (+ `-b`). This is what Pietro browses and references by number ("news-012", "slides-004").
+
+**Re-rendering or fixing an asset that is already archived.** The archive script only ever assigns the NEXT free `NNN`, so re-running it makes a duplicate, not an update. To update an existing asset (a look change, a copy fix, a re-render), do not re-run the script: find its existing `NNN` (match the caption text or the cover image), then overwrite the same `dispatch-posts/news-NNN.*` files directly with the new render. Always update BOTH places, the `queue/` folder Studio posts from AND the matching `dispatch-posts/NNN` entry, or the two silently drift.
 
 ## Notes
 
@@ -58,5 +68,5 @@ Before the first upload of a session that writes to Drive, confirm with Pietro. 
 
 This module (`news`) runs under Pietro Enterprise (sibling repo `pietro-enterprise`). Two things are non-optional there:
 
-- **Contract.** Deliver as `Pietro Dispatch/<DATE>/candidate-<NN>-<slug>/` with `post-1/2.png`, `caption-1/2.txt`, `meta.json`. Studio's scanner silently skips anything else. Prove it: `node ../pietro-enterprise/registry/contracts/validate-contract.mjs "<folder>"`.
+- **Contract.** Deliver as `pietro-works-env/queue/Pietro Dispatch/<DATE>/candidate-<NN>-<slug>/` with `post-1/2.png`, `caption-1/2.txt`, `meta.json`. Studio's scanner silently skips anything else. Prove it: `node ../pietro-enterprise/registry/contracts/validate-contract.mjs "<folder>"`.
 - **Two gates.** Before delivery, the output passes Brand Guardian (voice, brand, grounding) then Validator (contract, dimensions, will Studio index it). See `pietro-enterprise/skills/review`.

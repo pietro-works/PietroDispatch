@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /**
- * news.mjs — render Pietro Dispatch cards through news.html, headless, at 2160.
+ * article.mjs — render Pietro article banners through article.html, headless, at 1920x1080.
  *
- * Adapted from tools/export-quote-images.mjs (the quote exporter). Same approach:
- * a local static server for the template and its assets, headless Chrome driven
- * over CDP at deviceScaleFactor 2, an element-clip screenshot validated to 2160.
- * Differences: news selectors, and each card's fields and background are injected
- * directly by calling the template's own functions, since the news template never
- * had a background step.
+ * Same approach as news.mjs: a local static server for the template and its assets,
+ * headless Chrome driven over CDP, an element-clip screenshot validated to size.
+ * Differences from news.mjs: 16:9 canvas at deviceScaleFactor 1 (1920x1080 is the
+ * LinkedIn article cover delivery size, so no 2x pass), banner selectors, a deck
+ * line instead of a summary, and an optional per-banner kicker label.
  *
  * Usage:
- *   node renderer/news.mjs --cards work/<date>/cards.json --root work/<date> --out work/<date>/cards [--chrome <path>]
+ *   node renderer/article.mjs --banners work/<dir>/banners.json --root work/<dir> --out work/<dir>/banners [--chrome <path>] [--check-fit]
  *
- * cards.json: [{ id, category, headline, highlight, summary, bg }]
- *   bg is a path relative to --root, e.g. "backgrounds/bg-01-1.png".
+ * banners.json: [{ id, category, headline, highlight, deck, bg, kicker?, headlineSize? }]
+ *   bg is a path relative to --root, e.g. "backgrounds/bg-1.png" (1920x1080).
+ *   deck may be "" for a headline-only banner.
  *
  * Chrome is resolved from --chrome, then CHROME_BIN, then common locations.
  */
@@ -26,36 +26,37 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const RENDERER_DIR = dirname(fileURLToPath(import.meta.url));
-const SIDE = 1080;
-const OUT_SIDE = 2160;
+const OUT_W = 1920;
+const OUT_H = 1080;
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { cards: null, root: null, out: null, chrome: null, checkFit: false };
+  const o = { banners: null, root: null, out: null, chrome: null, checkFit: false };
   for (let i = 0; i < a.length; i += 1) {
-    if (a[i] === '--cards') o.cards = a[++i];
+    if (a[i] === '--banners') o.banners = a[++i];
     else if (a[i] === '--root') o.root = a[++i];
     else if (a[i] === '--out') o.out = a[++i];
     else if (a[i] === '--chrome') o.chrome = a[++i];
     else if (a[i] === '--check-fit') o.checkFit = true;
     else throw new Error(`Unknown argument: ${a[i]}`);
   }
-  if (!o.cards || !o.root || !o.out) throw new Error('Required: --cards, --root, --out');
+  if (!o.banners || !o.root || !o.out) throw new Error('Required: --banners, --root, --out');
   return o;
 }
 
-// Layout rules (set 2026-07-17), enforced from measureFit()'s real rendered metrics:
-//   headline: 1 or 2 lines (3+ is a hard fail); a sub-56px headline is a soft warn (copy long).
-//   summary: exactly 2 lines, second line 75-99% full (1 line, 3+ lines, or a stubby 2nd line fail).
-//   stray: no wrapped block (headline or summary) may strand a lone word on a line (shared with slides/article).
+// Banner layout rules, enforced from measureFit()'s real rendered metrics:
+//   headline: 1 or 2 lines (3+ is a hard fail); a sub-96px headline is a soft warn (copy long).
+//   deck: 0 lines (empty is allowed), 1 line, or 2 lines with the 2nd at least 40% full.
+//   A 3-line deck or a stub 2nd line is a hard fail.
+//   stray: no wrapped block (headline or deck) may strand a lone word on a line (shared with news/slides).
 function fitVerdict(m) {
   if (!m) return { ok: true, notes: ['no measurement'] };
   const notes = [];
   let hard = false;
   if (m.headlineLines > 2) { notes.push(`headline ${m.headlineLines} lines (max 2)`); hard = true; }
-  else if (m.headlineSize != null && m.headlineSize < 56) { notes.push(`headline ${m.headlineSize}px, copy runs long`); }
-  if (m.summaryLines !== 2) { notes.push(`summary ${m.summaryLines} lines (need exactly 2)`); hard = true; }
-  else if (m.summaryFill < 75) { notes.push(`summary 2nd line ${m.summaryFill}% full (need 75-99)`); hard = true; }
+  else if (m.headlineSize != null && m.headlineSize < 96) { notes.push(`headline ${m.headlineSize}px, copy runs long`); }
+  if (m.deckLines > 2) { notes.push(`deck ${m.deckLines} lines (max 2)`); hard = true; }
+  else if (m.deckLines === 2 && m.deckFill < 40) { notes.push(`deck 2nd line ${m.deckFill}% full (stub, need 40+)`); hard = true; }
   if (m.stray && m.stray.length) { notes.push(`stray word on ${m.stray.join(', ')}`); hard = true; }
   return { ok: !hard, notes };
 }
@@ -66,7 +67,7 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// mirror news.html render(): escape headline, wrap the exact highlight substring
+// mirror article.html render(): escape headline, wrap the exact highlight substring
 function headlineHtml(headline, highlight) {
   let html = escapeHtml(headline);
   if (highlight) {
@@ -90,7 +91,7 @@ async function startStaticServer(root) {
   const server = createServer(async (req, res) => {
     try {
       const rel = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
-      const path = resolve(root, `.${rel === '/' ? '/news.html' : rel}`);
+      const path = resolve(root, `.${rel === '/' ? '/article.html' : rel}`);
       if (!path.startsWith(root)) { res.writeHead(403); res.end('Forbidden'); return; }
       const info = await stat(path);
       if (!info.isFile()) throw new Error('not a file');
@@ -144,7 +145,7 @@ class Cdp {
 }
 
 async function launchChrome(bin) {
-  const userDataDir = await mkdtemp(join(tmpdir(), 'pietro-news-chrome-'));
+  const userDataDir = await mkdtemp(join(tmpdir(), 'pietro-article-chrome-'));
   const proc = spawn(bin, [
     '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run',
     '--no-default-browser-check', '--disable-dev-shm-usage',
@@ -165,34 +166,36 @@ async function newPage(cdp, url) {
   const { sessionId } = await cdp.call('Target.attachToTarget', { targetId, flatten: true });
   const page = (m, p = {}) => cdp.call(m, p, sessionId);
   await page('Page.enable'); await page('Runtime.enable');
-  await page('Emulation.setDeviceMetricsOverride', { width: SIDE, height: SIDE, deviceScaleFactor: 2, mobile: false, scale: 1 });
+  // deviceScaleFactor 1: the 1920x1080 canvas IS the delivery size for article covers
+  await page('Emulation.setDeviceMetricsOverride', { width: OUT_W, height: OUT_H, deviceScaleFactor: 1, mobile: false, scale: 1 });
   const load = cdp.once('Page.loadEventFired', sessionId);
   await page('Page.navigate', { url });
   await load;
-  // let the template's own loadTSV settle (it reads the header-only news.tsv) and fonts load
+  // let the template's own loadTSV settle (it reads the header-only article.tsv) and fonts load
   await page('Runtime.evaluate', { expression: `(async()=>{await document.fonts.ready;await new Promise(r=>setTimeout(r,300));})()`, awaitPromise: true });
   return page;
 }
 
-async function renderCard(page, card, dataUrl) {
-  const hlHtml = headlineHtml(card.headline, card.highlight);
+async function renderBanner(page, banner, dataUrl) {
+  const hlHtml = headlineHtml(banner.headline, banner.highlight);
   const setExpr = `(() => {
-    const cat = ${JSON.stringify(card.category || 'NEWS')};
+    const cat = ${JSON.stringify(banner.category || 'ARTICLE')};
     document.getElementById('catLabel').textContent = cat;
     if (typeof applyCatAccent === 'function') applyCatAccent(cat);
+    if (typeof setKicker === 'function') setKicker(${JSON.stringify(banner.kicker || 'ARTICLE')});
     document.getElementById('headline').innerHTML = ${JSON.stringify(hlHtml)};
-    document.getElementById('summary').textContent = ${JSON.stringify(card.summary || '')};
+    document.getElementById('deck').textContent = ${JSON.stringify(banner.deck || '')};
     if (typeof setBackground === 'function') setBackground(${JSON.stringify(dataUrl)});
-    // optional per-card headline cap. fitHeadline() reads the auto checkbox and the
-    // range, so set BOTH on every card: this page renders the whole run, and leaving
-    // a previous card's override in place would silently resize the next one.
+    // optional per-banner headline cap; set BOTH controls on every banner so a
+    // previous banner's override never leaks into the next one (same rule as news.mjs)
     const auto = document.getElementById('autoSize');
     const range = document.getElementById('sizeRange');
-    const capOverride = ${JSON.stringify(card.headlineSize ?? null)};
+    const capOverride = ${JSON.stringify(banner.headlineSize ?? null)};
     if (auto && range) {
       auto.checked = capOverride === null;
+      // let the template own the auto-fit cap (HEADLINE_CAP); only override on an explicit headlineSize
       if (capOverride !== null) range.value = capOverride;
-      else range.value = 96;
+      else if (typeof HEADLINE_CAP !== 'undefined') range.value = HEADLINE_CAP;
     }
   })()`;
   await page('Runtime.evaluate', { expression: setExpr });
@@ -209,7 +212,7 @@ async function renderCard(page, card, dataUrl) {
 
 async function shoot(page, outPath) {
   const b = await page('Runtime.evaluate', {
-    expression: `(()=>{const r=document.getElementById('news').getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};})()`,
+    expression: `(()=>{const r=document.getElementById('banner').getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height};})()`,
     returnByValue: true,
   });
   const { x, y, width, height } = b.result.value;
@@ -217,36 +220,36 @@ async function shoot(page, outPath) {
   const buf = Buffer.from(shot.data, 'base64');
   if (buf.toString('ascii', 1, 4) !== 'PNG') throw new Error('capture is not a PNG');
   const w = buf.readUInt32BE(16), h = buf.readUInt32BE(20);
-  if (w !== OUT_SIDE || h !== OUT_SIDE) throw new Error(`${basename(outPath)} is ${w}x${h}, expected ${OUT_SIDE}x${OUT_SIDE}`);
+  if (w !== OUT_W || h !== OUT_H) throw new Error(`${basename(outPath)} is ${w}x${h}, expected ${OUT_W}x${OUT_H}`);
   await writeFile(outPath, buf);
 }
 
 async function main() {
   const opts = parseArgs();
-  const cards = JSON.parse(await readFile(opts.cards, 'utf8'));
+  const banners = JSON.parse(await readFile(opts.banners, 'utf8'));
   await mkdir(opts.out, { recursive: true });
 
-  // the template fetches a relative news.tsv on load; a header-only stub keeps it quiet
-  const stub = join(RENDERER_DIR, 'news.tsv');
-  try { await access(stub); } catch { await writeFile(stub, 'id\tcategory\theadline\thighlight\tsummary\tsource\tdate\n'); }
+  // the template fetches a relative article.tsv on load; a header-only stub keeps it quiet
+  const stub = join(RENDERER_DIR, 'article.tsv');
+  try { await access(stub); } catch { await writeFile(stub, 'id\tcategory\theadline\thighlight\tdeck\tkicker\n'); }
 
   const bin = await resolveChrome(opts.chrome);
   const { server, port } = await startStaticServer(RENDERER_DIR);
-  const url = `http://127.0.0.1:${port}/news.html`;
+  const url = `http://127.0.0.1:${port}/article.html`;
   const chrome = await launchChrome(bin);
   const cdp = new Cdp(chrome.wsUrl);
 
   let fitFails = 0;
   try {
     const page = await newPage(cdp, url);
-    for (const card of cards) {
-      const bgBuf = await readFile(join(opts.root, card.bg));
+    for (const banner of banners) {
+      const bgBuf = await readFile(join(opts.root, banner.bg));
       const dataUrl = `data:image/png;base64,${bgBuf.toString('base64')}`;
-      const m = await renderCard(page, card, dataUrl);
-      const out = join(opts.out, `post-${card.id}.png`);
+      const m = await renderBanner(page, banner, dataUrl);
+      const out = join(opts.out, `banner-${banner.id}.png`);
       await shoot(page, out);
       const v = fitVerdict(m);
-      const detail = m ? `h=${m.headlineLines}L@${m.headlineSize}px s=${m.summaryLines}L/${m.summaryFill}%` : 'nomeasure';
+      const detail = m ? `h=${m.headlineLines}L@${m.headlineSize}px d=${m.deckLines}L/${m.deckFill}%` : 'nomeasure';
       console.log(`wrote ${basename(out)}  [fit ${v.ok ? 'ok' : 'FAIL'}] ${detail}${v.notes.length ? '  ' + v.notes.join('; ') : ''}`);
       if (!v.ok) fitFails += 1;
     }
@@ -258,7 +261,7 @@ async function main() {
   }
 
   if (fitFails > 0) {
-    console.log(`fit: ${fitFails} card(s) failed the layout rule (headline <=2 lines; summary exactly 2 lines, 2nd line 75-99% full; no stray word alone on a line)`);
+    console.log(`fit: ${fitFails} banner(s) failed the layout rule (headline <=2 lines; deck <=2 lines, no stub 2nd line; no stray word alone on a line)`);
     if (opts.checkFit) process.exit(1);
   }
 }

@@ -37,7 +37,7 @@ He writes in two delivery modes, and both open with the blue diamond. 💠 is th
 - **Structured DISPATCH** for analysis, case studies, and theses. A fixed four-marker spine carries the reader from a systemic hook to an architectural conclusion. See the DISPATCH block in §3 and the example in §2.2.
 - **Narrative** for build stories, mistakes, before-and-afters, and the dry-wit pieces. Looser than DISPATCH: clean line breaks for legibility, and a lighter scatter of thematic emoji that punctuate the beats rather than mark a fixed structure. See §2.1.
 
-Four things run through the structured mode and give it its shape. A hook that names a systemic shift. An ultimatum that filters out lazy architecture. A peer-to-peer stance that assumes the reader already knows the terms. Verbs that move (deploy, dismantle, refactor, isolate). And every piece pivots, at the close, into the reader's own pipeline.
+Four things run through the structured mode and give it its shape. A hook that names a systemic shift. An ultimatum that filters out lazy architecture. A peer-to-peer stance that assumes the reader is sharp, then guides them down through any term they might not know. Verbs that move (deploy, dismantle, refactor, isolate). And every piece pivots, at the close, into the reader's own pipeline.
 
 ### What to lead with
 Show the artifact. Use specific numbers with their context. Write plain sentences and vary their length. Lead with the real problem or the concrete result. Admit a limit when there is one, because sincerity is what makes the rest believable. Let the work make the claim.
@@ -186,6 +186,28 @@ A build write-up:
 #OpenToDisruption #SociologyAI #SystemsDesign #AgentBasedModeling #SocSim #EdTech #InteractiveLearning #PietroWorks
 ```
 
+The accessibility exemplar (guide-through-the-depths register). This is the target for technical DISPATCH posts: full four-marker spine, real mechanism, every CVE and acronym handed a plain-language grip on first use, and a smart non-specialist can follow all of it without a glossary. Deep, not obscure. Match this register on technical topics, not a jargon wall:
+
+```
+💠 Everyone worried about AI jailbreaks, tricky prompts, and model safety. Meanwhile, the actual break-in used a basic software bug that predates transformers by two decades.
+
+⚡ Treat your AI platform like a standard web app, not a fancy mind. Otherwise, expect to find your secret API keys in someone else's incident report.
+
+Langflow has 145,000 GitHub stars and 7,000 public instances. This isn't its first issue: a major warning hit in May. Recently, hackers chained two basic bugs to breach it:
+
+⚙️ The Door (CVE-2026-55255): An authorization bypass let users run someone else's AI workflow just by entering its ID. No model was tricked; the system simply failed to check permissions.
+
+⚙️ The Takeover (CVE-2026-33017): Attackers used that open door to run malicious Python code. The bypass got them in, and this RCE bug let them hijack the host.
+
+⚙️ The Loot: Hackers stole stored AI provider and AWS keys to hijack cloud compute for their botnets. It was pure financial theft.
+
+🧠 A drag-and-drop tool storing live credentials online is production infrastructure, no matter how casual it feels. Find the "experimental" AI tools your team set up and forgot: they are holding your keys right now.
+
+#OpenToDisruption #ArchitectToDeliver #ZeroBloatEngineering #PietroWorks #AISecurity #AgentOps #AppSec
+```
+
+Why it works: the hook frames the whole story in one line a layperson gets, the ⚙️ points give each CVE a plain handle ("The Door", "The Takeover", "The Loot") with the code parked in a parenthetical, and every term earns its keep with a one-clause gloss ("an authorization bypass, the system simply failed to check permissions"). The technical depth is intact, two real CVEs and the exact chain, but nobody needs a security background to follow it. The reader is guided down into the mechanism, not walked around it.
+
 ---
 
 ## §3. Channel workflows
@@ -203,7 +225,7 @@ The spine:
 - **🧠 The conclusion.** The architectural takeaway. Translate the whole breakdown into one foundational principle, then pivot it straight into the reader's own pipeline or infrastructure. The post ends on a challenge to their stack, not a recap.
 
 Stance and verbs:
-- **Peer to peer.** Write to a fellow systems architect or engineering lead. Assume the terms. Do not define race conditions, integer overflows, modular forms, or feature flags. No hand-holding.
+- **Peer to peer in confidence, a guide in vocabulary.** Write with the certainty of someone who knows the system cold, then take the reader down into it with you. Assume they are sharp, never that they share your jargon. The first time a term or an opaque identifier lands, hand them a grip on it: name the concept and park the code in a parenthetical ("the open door (CVE-2026-55255)"), or say in one clause what it actually does ("an authorization bypass, a permission check that never ran"). The target feeling is the non-specialist thinking "ah, now I get it, and I like being walked through this." Depth stays, the wall comes down. Guiding is not hand-holding: no condescension, no tutorial padding, no defining what every reader already knows. The register to imitate is a good technical writer explaining to a smart peer from a different specialty, Simon Willison more than a spec sheet. See the accessibility exemplar in §2.7.
 - **Kinetic verbs.** weaponize, deploy, dismantle, refactor, bridge, purge, capture, isolate. Active and precise, so even a historical case study reads as a live diagnostic rather than a lecture.
 
 Workflow:
@@ -304,7 +326,7 @@ If any answer is no, make it more concrete.
 ### Reusable constraint block (paste at the top of a generation prompt)
 General: "Write as Pietro: calm, declarative, concrete, confident. Open on the first real sentence, no preamble. Close on a takeaway, never 'Agree?'. Active voice. Vary sentence length. No em dashes, no banned words. Show the actual artifact and one number with its baseline. One sharp or contrarian line at most, only if it earns its place."
 
-DISPATCH: "Write a DISPATCH post on the four-marker spine. 💠 a systemic hook, ⚡ an ultimatum on the 'If your X doesn't Y, then get used to Z' formula, ⚙️ three uneven points of real mechanics, 🧠 an architectural thesis that pivots into the reader's pipeline. Peer to peer, terms assumed, no hand-holding. Kinetic verbs (deploy, dismantle, refactor, isolate). Every number carries its baseline and scope. The four markers are the only emoji."
+DISPATCH: "Write a DISPATCH post on the four-marker spine. 💠 a systemic hook, ⚡ an ultimatum on the 'If your X doesn't Y, then get used to Z' formula, ⚙️ three uneven points of real mechanics, 🧠 an architectural thesis that pivots into the reader's pipeline. Peer to peer in confidence, a guide in vocabulary: gloss or handle every term and opaque identifier on first use so a sharp non-specialist follows the whole post and enjoys the descent. Depth stays, the wall comes down. Kinetic verbs (deploy, dismantle, refactor, isolate). Every number carries its baseline and scope. The four markers are the only emoji."
 
 ---
 

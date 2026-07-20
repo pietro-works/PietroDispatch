@@ -6,7 +6,13 @@
  * by calling the template's renderSlide(slide, topic), and a printToPDF pass at the end.
  *
  * Usage:
- *   node renderer/slides.mjs --deck work/<date>/slides.json --root work/<date> --out work/<date>/slides [--pdf work/<date>/slides.pdf] [--chrome <path>]
+ *   node renderer/slides.mjs --deck work/<date>/slides.json --root work/<date> --out work/<date>/slides [--pdf work/<date>/slides.pdf] [--chrome <path>] [--check-fit]
+ *
+ *   --check-fit reads slides.html's measureFit() per card and prints a per-card fit line
+ *   (hl=<n>L t=<n>L). It flags [fit FAIL] when the .grad accent spans >2 lines, any title/hero
+ *   breaks past 2 lines, or a wrapped block strands a lone word, and makes the run exit non-zero
+ *   if any card fails. Without the flag the run still writes every PNG and the PDF, then prints
+ *   a one-line failed-card count.
  *
  * slides.json: { "topic": "FILENAME.MD", "slides": [ { "id":"01", "type":"A", ...fields, "bg":"backgrounds/bg-01.png" }, ... ] }
  *   For type C use "bgTop" and "bgBot" instead of "bg". bg paths are relative to --root.
@@ -25,18 +31,37 @@ const SIDE = 1080;
 const OUT_SIDE = 2160;
 
 function parseArgs() {
-  const a = process.argv.slice(2); const o = { deck: null, root: null, out: null, pdf: null, chrome: null };
+  const a = process.argv.slice(2); const o = { deck: null, root: null, out: null, pdf: null, chrome: null, checkFit: false };
   for (let i = 0; i < a.length; i += 1) {
     if (a[i] === '--deck') o.deck = a[++i];
     else if (a[i] === '--root') o.root = a[++i];
     else if (a[i] === '--out') o.out = a[++i];
     else if (a[i] === '--pdf') o.pdf = a[++i];
     else if (a[i] === '--chrome') o.chrome = a[++i];
+    else if (a[i] === '--check-fit') o.checkFit = true;
     else throw new Error(`Unknown argument: ${a[i]}`);
   }
   if (!o.deck || !o.root || !o.out) throw new Error('Required: --deck, --root, --out');
   if (!o.pdf) o.pdf = join(o.out, 'slides.pdf');
   return o;
+}
+
+// Disposition rule (set 2026-07-20), enforced from measureFit()'s real rendered metrics.
+// Named fitVerdict to match news.mjs/article.mjs (uniform contract across the three drivers):
+//   .grad hl accent: at most SLIDE_MAXLINES visual lines (3+ is a hard fail).
+//   title/hero: at most SLIDE_MAXLINES visual lines (a wrapped title/hero past 2 is a hard fail).
+//   stray: no wrapped block (title, hero, C before/after, A step) may strand a lone word on a line.
+// The slides renderer has no auto-fit, so a fail means the copy or the hardcoded <br> breaks
+// need a redistribute in slides.json; this only detects it.
+const SLIDE_MAXLINES = 2;
+function fitVerdict(m) {
+  if (!m) return { ok: true, notes: ['no measurement'] };
+  const notes = [];
+  let hard = false;
+  if (m.hlLines > SLIDE_MAXLINES) { notes.push(`hl accent ${m.hlLines} lines (max ${SLIDE_MAXLINES})`); hard = true; }
+  if (m.titleMax > SLIDE_MAXLINES) { notes.push(`title/hero ${m.titleMax} lines (max ${SLIDE_MAXLINES})`); hard = true; }
+  if (m.stray && m.stray.length) { notes.push(`stray word on ${m.stray.join(', ')}`); hard = true; }
+  return { ok: !hard, notes };
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 function mimeType(p){const e=extname(p).toLowerCase();return ({'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.png':'image/png','.webp':'image/webp','.avif':'image/avif','.woff2':'font/woff2','.jpg':'image/jpeg','.jpeg':'image/jpeg'})[e]||'application/octet-stream';}
@@ -102,6 +127,7 @@ async function main(){
   const bin=await resolveChrome(o.chrome);
   const {server,port}=await startStaticServer(RENDERER_DIR);
   const chrome=await launchChrome(bin); const cdp=new Cdp(chrome.wsUrl);
+  let fitFails=0;
   try{
     const page=await attach(cdp,`http://127.0.0.1:${port}/slides.html`,true);
     for(const sl of deck.slides){
@@ -118,7 +144,14 @@ async function main(){
         await Promise.all(urls.map(u=>new Promise(r=>{const i=new Image();i.onload=i.onerror=r;i.src=u;})));
         await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
       })()`,awaitPromise:true});
-      const out=join(o.out,`post-${s.id}.png`); await shoot(page,out); console.log('wrote '+basename(out));
+      const out=join(o.out,`post-${s.id}.png`);
+      const measured=await page('Runtime.evaluate',{expression:`(typeof measureFit==='function')?measureFit():null`,returnByValue:true});
+      const m=measured.result.value;
+      await shoot(page,out);
+      const v=fitVerdict(m);
+      const detail=m?`hl=${m.hlLines}L t=${m.titleMax}L`:'nomeasure';
+      console.log('wrote '+basename(out)+`  [fit ${v.ok?'ok':'FAIL'}] ${detail}${v.notes.length?'  '+v.notes.join('; '):''}`);
+      if(!v.ok) fitFails+=1;
     }
     // stitch a square PDF from the rendered slides, via the same Chrome
     const imgs=deck.slides.map(s=>`post-${s.id}.png`);
@@ -136,6 +169,10 @@ async function main(){
     try{await cdp.call('Browser.close');}catch{}
     await new Promise(r=>{const t=setTimeout(()=>{try{chrome.proc.kill('SIGKILL');}catch{}r();},3000);chrome.proc.once('exit',()=>{clearTimeout(t);r();});});
     await rm(chrome.userDataDir,{recursive:true,force:true}); await new Promise(r=>server.close(r));
+  }
+  if(fitFails>0){
+    console.log(`fit: ${fitFails} card(s) broke the disposition rule (hl accent <=2 lines; no title/hero >2 lines; no stray word alone on a line)`);
+    if(o.checkFit) process.exit(1);
   }
 }
 main().catch(e=>{console.error(e.stack||e.message);process.exit(1);});

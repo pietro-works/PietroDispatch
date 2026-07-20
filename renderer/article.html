@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Pietro.works — News Card Generator</title>
+<title>Pietro.works — Article Banner Generator</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <style id="clash-display-faces">
@@ -26,13 +26,12 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
   :root{
-    /* dark spectrum — cinematic */
+    /* dark spectrum — cinematic, same base as news.html */
     --bg:#060a12; --bg2:#0a0f1e; --bg3:#0e1525;
     --ink:#eef4ff; --muted:#9fb0d0; --dim:#6b7da0;
     --line:rgba(120,160,230,.16); --line-s:rgba(120,160,230,.30);
     --cyan:#39e8ff; --green:#00ff99; --pink:#c084fc; --purple:#a855f7;
     --cat:var(--cyan);                /* per-category accent, set in JS */
-    --rx-lg:22px; --rx-md:14px; --rx-sm:8px;
     --ease:cubic-bezier(.22,1,.36,1);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -42,75 +41,82 @@
     font-family:"DM Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
     background:
       radial-gradient(ellipse 90% 80% at 50% 30%, rgba(20,30,60,.5), transparent 60%),
-      radial-gradient(ellipse 70% 70% at 12% 6%, rgba(57,232,255,.10), transparent 58%),
-      radial-gradient(ellipse 60% 60% at 90% 8%, rgba(168,85,247,.10), transparent 58%),
       linear-gradient(160deg, #05080f 0%, #070b16 56%, #060a12 100%);
   }
 
   /* ---------- fullscreen stage ---------- */
   .stage-wrap{ position:fixed; inset:0; z-index:1; overflow:hidden; }
-  .stage{ position:absolute; top:50%; left:50%; width:1080px; height:1080px; transform-origin:center center; }
+  .stage{ position:absolute; top:50%; left:50%; width:1920px; height:1080px; transform-origin:center center; }
 
-  /* ---------- news canvas ---------- */
-  .news{
-    position:relative; width:1080px; height:1080px;
+  /* ---------- banner canvas (16:9) ---------- */
+  .banner{
+    position:relative; width:1920px; height:1080px;
     background:var(--bg);
     overflow:hidden; isolation:isolate;
     display:flex; flex-direction:column; justify-content:flex-end;
-    padding:92px 88px 84px;
+    padding:88px 104px 84px;
   }
 
-  /* background photo */
-  .news-bg{
+  /* background photo — subject composed right-of-center by the image prompt */
+  .banner-bg{
     position:absolute; inset:0; z-index:0;
-    background-position:50% 42%; background-size:cover; background-repeat:no-repeat;
+    background-position:62% 50%; background-size:cover; background-repeat:no-repeat;
     background-image:
-      radial-gradient(ellipse 80% 70% at 70% 28%, rgba(57,232,255,.16), transparent 60%),
-      radial-gradient(ellipse 70% 70% at 24% 14%, rgba(168,85,247,.16), transparent 60%),
-      radial-gradient(ellipse 90% 80% at 50% 96%, rgba(0,255,153,.07), transparent 62%),
-      linear-gradient(155deg, #0b1426 0%, #0a1120 50%, #070c17 100%);
+      radial-gradient(ellipse 70% 80% at 76% 40%, rgba(57,232,255,.14), transparent 60%),
+      radial-gradient(ellipse 50% 60% at 88% 70%, rgba(255,150,60,.10), transparent 62%),
+      linear-gradient(115deg, #0b1426 0%, #0a1120 50%, #070c17 100%);
     transition:filter .3s var(--ease);
   }
-  /* vignette + bottom scrim so copy stays legible */
-  .news-scrim{
+  /* scrim: a single smooth bottom-up band carries the legibility (concentrated at
+     the bottom, gentle falloff, ~10% lighter than a hard scrim). Only a faint left
+     wash and top touch remain for depth. */
+  .banner-scrim{
     position:absolute; inset:0; z-index:1; pointer-events:none;
     background:
-      linear-gradient(180deg, rgba(6,10,18,.42) 0%, rgba(6,10,18,0) 26%, rgba(6,10,18,.18) 50%, rgba(6,10,18,.74) 76%, rgba(6,10,18,.96) 100%),
-      radial-gradient(120% 100% at 50% 38%, transparent 52%, rgba(6,10,18,.5) 100%);
+      linear-gradient(0deg,
+        rgba(6,10,18,.85) 0%,
+        rgba(6,10,18,.73) 15%,
+        rgba(6,10,18,.55) 30%,
+        rgba(6,10,18,.34) 46%,
+        rgba(6,10,18,.16) 62%,
+        rgba(6,10,18,.05) 76%,
+        rgba(6,10,18,0) 88%),
+      linear-gradient(90deg, rgba(6,10,18,.22) 0%, rgba(6,10,18,.07) 32%, rgba(6,10,18,0) 56%),
+      linear-gradient(180deg, rgba(6,10,18,.28) 0%, rgba(6,10,18,0) 18%);
   }
-  /* dot matrix — brand signature, faint, upper area */
-  .news-dots{
+  /* dot matrix — brand signature, faint, upper-right */
+  .banner-dots{
     position:absolute; inset:0; z-index:2; pointer-events:none;
-    opacity:.34; mix-blend-mode:screen;
+    opacity:.30; mix-blend-mode:screen;
     background-image:
       image-set("hero-dot-matrix-static.avif" 1x type("image/avif"),
                 "hero-dot-matrix-static.webp" 1x type("image/webp"),
                 "hero-dot-matrix-static.png" 1x type("image/png"));
-    background-position:50% 0%; background-repeat:no-repeat; background-size:cover;
-    -webkit-mask-image:radial-gradient(150% 120% at 74% 14%, #000 0%, #000 30%, rgba(0,0,0,.4) 56%, transparent 78%);
-    mask-image:radial-gradient(150% 120% at 74% 14%, #000 0%, #000 30%, rgba(0,0,0,.4) 56%, transparent 78%);
+    background-position:100% 0%; background-repeat:no-repeat; background-size:cover;
+    -webkit-mask-image:radial-gradient(130% 130% at 86% 10%, #000 0%, #000 26%, rgba(0,0,0,.35) 52%, transparent 74%);
+    mask-image:radial-gradient(130% 130% at 86% 10%, #000 0%, #000 26%, rgba(0,0,0,.35) 52%, transparent 74%);
     -webkit-mask-size:100% 100%; mask-size:100% 100%;
     -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
   }
-  /* thin top hairline frame for the editorial frame feel */
-  .news-frame{
+  /* thin hairline frame, editorial */
+  .banner-frame{
     position:absolute; z-index:3; pointer-events:none;
-    inset:34px 34px 34px 34px; border:1px solid rgba(180,205,255,.14); border-radius:6px;
+    inset:30px; border:1px solid rgba(180,205,255,.14); border-radius:6px;
   }
 
   /* corner brand tag (top-left) */
-  .news-kicker{
-    position:absolute; z-index:5; top:64px; left:88px;
-    display:flex; align-items:center; gap:13px;
-    font-family:"DM Mono",monospace; font-size:17px; letter-spacing:.14em; text-transform:uppercase;
+  .banner-kicker{
+    position:absolute; z-index:5; top:62px; left:104px;
+    display:flex; align-items:center; gap:16px;
+    font-family:"DM Mono",monospace; font-size:22px; letter-spacing:.14em; text-transform:uppercase;
     color:rgba(220,232,255,.78);
   }
-  .news-kicker .wm{color:#fff; font-weight:500;}
-  .news-kicker .wm sup{color:var(--cyan); font-size:.6em; top:-.55em;}
-  .news-kicker .live{
-    display:inline-flex; align-items:center; gap:8px; letter-spacing:.1em; color:rgba(220,232,255,.6);
+  .banner-kicker .wm{color:#fff; font-weight:500;}
+  .banner-kicker .wm sup{color:var(--cyan); font-size:.6em; top:-.55em;}
+  .banner-kicker .live{
+    display:inline-flex; align-items:center; gap:10px; letter-spacing:.1em; color:rgba(220,232,255,.6);
   }
-  .news-kicker .live .d{width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 10px var(--green);}
+  .banner-kicker .live .d{width:10px; height:10px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green);}
 
   /* drop hint (not exported) */
   .drop-hint{
@@ -118,95 +124,80 @@
     pointer-events:none; opacity:0; transition:opacity .25s;
     font-family:"DM Mono",monospace; font-size:21px; letter-spacing:.04em; color:rgba(220,232,255,.66);
   }
-  .news.drag .drop-hint{opacity:1;}
-  .news.drag .news-bg{filter:brightness(.7) saturate(.8);}
+  .banner.drag .drop-hint{opacity:1;}
+  .banner.drag .banner-bg{filter:brightness(.7) saturate(.8);}
   .drop-hint span{
     border:1.5px dashed rgba(150,185,255,.5); border-radius:16px; padding:26px 40px;
     background:rgba(8,14,28,.5); -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
   }
 
-  /* ---------- content block (bottom) ---------- */
-  .news-content{ position:relative; z-index:5; display:flex; flex-direction:column; }
+  /* ---------- content block (bottom, extends to the right edge) ---------- */
+  .banner-content{ position:relative; z-index:5; display:flex; flex-direction:column; max-width:1712px; }
 
-  /* category pill */
-  .news-cat{
-    display:inline-flex; align-items:center; gap:12px; align-self:flex-start;
+  /* category pill — same glass pill as news */
+  .banner-cat{
+    display:inline-flex; align-items:center; gap:14px; align-self:flex-start;
     border:1px solid var(--line-s);
     background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
     -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
-    border-radius:999px; padding:12px 22px; margin-bottom:30px;
+    border-radius:999px; padding:14px 26px; margin-bottom:34px;
     box-shadow:inset 0 1px rgba(255,255,255,.18);
     overflow:hidden; isolation:isolate;
     -webkit-mask-image:-webkit-radial-gradient(white, black);
     mask-image:radial-gradient(white, black);
   }
-  .news-cat .c-label{
-    font-family:"DM Mono",monospace; font-size:18px; font-weight:500;
+  .banner-cat .c-label{
+    font-family:"DM Mono",monospace; font-size:22px; font-weight:500;
     letter-spacing:.16em; text-transform:uppercase; color:#fff;
     white-space:nowrap; outline:none;
   }
 
-  /* headline */
-  .news-headline{
+  /* headline — 1.2x the news headline, extends across most of the width */
+  .banner-headline{
     font-family:"Clash Display","DM Sans",sans-serif;
-    font-weight:600; font-size:78px; line-height:1.04; letter-spacing:-.018em;
-    color:#fff; text-wrap:balance; max-width:920px;
-    text-shadow:0 2px 40px rgba(0,0,0,.5);
+    font-weight:600; font-size:115px; line-height:1.05; letter-spacing:-.018em;
+    color:#fff; text-wrap:balance; max-width:1600px;
+    text-shadow:0 3px 44px rgba(0,0,0,.5);
     outline:none;
   }
-  .news-headline:focus-visible,
-  .news-summary:focus-visible,
+  .banner-headline:focus-visible,
+  .banner-deck:focus-visible,
   .c-label:focus-visible{outline:2px dashed var(--line-s); outline-offset:12px; border-radius:6px;}
-  .news-headline .hl{
+  .banner-headline .hl{
     color:transparent;
     background:linear-gradient(105deg, #39e8ff 0%, #00ff99 50%, #a855f7 100%);
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-    filter:saturate(1.2) brightness(1.12) drop-shadow(0 0 26px rgba(57,232,255,.28));
+    filter:saturate(1.2) brightness(1.12) drop-shadow(0 0 30px rgba(57,232,255,.28));
   }
 
-  /* summary deck */
-  .news-summary{
-    margin-top:26px; max-width:840px;
-    font-family:"DM Sans",sans-serif; font-weight:400; font-size:30px; line-height:1.42;
+  /* deck — the standfirst line under the headline */
+  .banner-deck{
+    margin-top:29px; max-width:1200px;
+    font-family:"DM Sans",sans-serif; font-weight:400; font-size:38px; line-height:1.42;
     color:rgba(224,232,248,.86); text-wrap:pretty;
     outline:none;
   }
+  .banner-deck:empty{display:none;}
 
-  /* footer meta */
-  .news-foot{
-    display:flex; align-items:center; gap:18px; flex-wrap:nowrap; white-space:nowrap;
-    margin-top:40px; padding-top:30px; border-top:1px solid rgba(190,210,255,.18);
-    font-family:"DM Mono",monospace; font-size:21px; letter-spacing:.02em;
+  /* footer meta — spans the full content width; brand mark pinned to the right edge */
+  .banner-foot{
+    display:flex; align-items:center; gap:22px; flex-wrap:nowrap; white-space:nowrap;
+    margin-top:43px; padding-top:34px; border-top:1px solid rgba(190,210,255,.20);
+    width:100%;
+    font-family:"DM Mono",monospace; font-size:24px; letter-spacing:.02em;
   }
-  .news-foot .src{color:#fff; font-weight:500;}
-  .news-foot .sep{color:var(--dim);}
-  .news-foot .date{color:var(--muted);}
-  .news-foot .brand{
-    margin-left:auto; display:flex; align-items:center; gap:10px;
-    color:rgba(220,232,255,.7);
+  .banner-foot .src{color:#fff; font-weight:500;}
+  .banner-foot .sep{color:var(--dim);}
+  .banner-foot .date{color:var(--muted);}
+  .banner-foot .brand{
+    margin-left:auto; display:flex; align-items:center; gap:12px;
+    color:rgba(220,232,255,.72);
   }
-  .news-foot .brand .wm{color:#fff;}
-  .news-foot .brand .wm sup{color:var(--cyan); font-size:.6em; top:-.55em;}
-  .news-foot .brand .av{
-    width:40px; height:40px; border-radius:50%; object-fit:cover;
-    border:1.5px solid rgba(180,205,255,.4);
-  }
-
-  /* ---------- image overlays ---------- */
-  .q-overlay{position:absolute; z-index:20; cursor:move; user-select:none;}
-  .q-overlay img{display:block; width:100%; height:auto; pointer-events:none; border-radius:4px;}
-  .q-overlay-del,.q-overlay-resize{position:absolute; opacity:0; transition:opacity .18s;}
-  .q-overlay:hover .q-overlay-del,.q-overlay:hover .q-overlay-resize{opacity:1;}
-  .q-overlay-del{
-    top:-11px; right:-11px; width:22px; height:22px; border-radius:50%;
-    background:#fff; border:1.5px solid rgba(200,50,50,.55);
-    color:#c00; font-size:15px; font-weight:700; line-height:20px;
-    text-align:center; cursor:pointer; z-index:1; box-shadow:0 2px 8px rgba(0,0,0,.18);
-  }
-  .q-overlay-resize{
-    bottom:-9px; right:-9px; width:20px; height:20px; border-radius:50%;
-    background:#fff; border:2px solid var(--cyan); cursor:se-resize; z-index:1;
-    box-shadow:0 2px 8px rgba(0,0,0,.18);
+  .banner-foot .brand .wm{color:#fff;}
+  .banner-foot .brand .wm sup{color:var(--cyan); font-size:.6em; top:-.55em;}
+  .banner-foot .brand .av{
+    width:46px; height:46px; border-radius:50%; object-fit:cover;
+    border:2px solid rgba(180,205,255,.45);
   }
 
   /* ---------- controls / dock ---------- */
@@ -262,26 +253,26 @@
 <body>
   <div class="stage-wrap">
     <div class="stage" id="stage">
-      <div class="news" id="news" data-screen-label="News Card Canvas">
-        <div class="news-bg" id="newsBg"></div>
-        <div class="news-scrim"></div>
-        <div class="news-dots"></div>
-        <div class="news-frame"></div>
+      <div class="banner" id="banner" data-screen-label="Article Banner Canvas">
+        <div class="banner-bg" id="bannerBg"></div>
+        <div class="banner-scrim"></div>
+        <div class="banner-dots"></div>
+        <div class="banner-frame"></div>
 
-        <div class="news-kicker">
+        <div class="banner-kicker">
           <span class="wm">Pietro<sup>.works</sup></span>
-          <span class="live"><span class="d"></span> DISPATCH</span>
+          <span class="live"><span class="d"></span> <span id="kickerLabel">ARTICLE</span></span>
         </div>
 
         <div class="drop-hint"><span>Drop a photo to set the background</span></div>
 
-        <div class="news-content">
-          <div class="news-cat">
+        <div class="banner-content">
+          <div class="banner-cat">
             <span class="c-label" id="catLabel" contenteditable="true" spellcheck="false">ANALYSIS</span>
           </div>
-          <div class="news-headline" id="headline" contenteditable="true" spellcheck="false"></div>
-          <div class="news-summary" id="summary" contenteditable="true" spellcheck="false"></div>
-          <div class="news-foot">
+          <div class="banner-headline" id="headline" contenteditable="true" spellcheck="false"></div>
+          <div class="banner-deck" id="deck" contenteditable="true" spellcheck="false"></div>
+          <div class="banner-foot">
             <span class="src" id="src" contenteditable="true" spellcheck="false">June</span>
             <span class="sep">&middot;</span>
             <span class="date" id="date" contenteditable="true" spellcheck="false">2026</span>
@@ -306,7 +297,7 @@
       <label>size</label>
       <input type="checkbox" id="autoSize" checked title="auto-fit headline"/>
       <label for="autoSize" style="font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;color:var(--muted)">auto</label>
-      <input type="range" id="sizeRange" min="48" max="96" step="1" value="78" style="transition:opacity .2s"/>
+      <input type="range" id="sizeRange" min="64" max="180" step="1" value="134" style="transition:opacity .2s"/>
       <span class="meta" id="sizeVal">auto</span>
     </div>
     <div class="ctrl-group">
@@ -315,18 +306,16 @@
       <button class="ctrl-btn" id="clearHlBtn">Clear</button>
     </div>
     <button class="ctrl-btn" id="bgBtn">&#128247; Background</button>
-    <button class="ctrl-btn" id="addImgBtn">&#xFF0B; Logo</button>
     <button class="ctrl-btn" id="resetBtn">&#8635; Reset</button>
     <button class="ctrl-btn primary" id="dlBtn" style="display:none">&#8595; Download PNG</button>
     <span id="actionHint" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim);opacity:0;transition:opacity .5s;pointer-events:none;display:inline-block;min-width:90px;text-align:center;"></span>
   </div>
   <input type="file" id="bgFileInput" accept="image/*" style="display:none;"/>
-  <input type="file" id="imgFileInput" accept="image/*" style="display:none;"/>
 
   <script>
-    const SIDE = 1080;
+    const W = 1920, H = 1080;
 
-    /* category → brand accent */
+    /* category → brand accent (same map as news.html) */
     const CAT_ACCENT = {
       BREAKING:'#39e8ff', ANALYSIS:'#a855f7', INDUSTRY:'#00ff99',
       INSIGHT:'#c084fc', REPORT:'#39e8ff', OPINION:'#ffb86c'
@@ -335,8 +324,10 @@
       const key = (label||'').trim().toUpperCase();
       document.documentElement.style.setProperty('--cat', CAT_ACCENT[key] || '#39e8ff');
     }
+    function setKicker(label){
+      document.getElementById('kickerLabel').textContent = (label||'ARTICLE').toUpperCase();
+    }
 
-    /* current month/year, auto-detected — no longer pulled from the TSV */
     function currentMonthLabel(){
       return new Date().toLocaleDateString('en-US', { month:'long' });
     }
@@ -346,7 +337,7 @@
 
     /* ── stage scaling ── */
     function fit(){
-      const s = Math.min(window.innerWidth, window.innerHeight) / SIDE;
+      const s = Math.min(window.innerWidth / W, window.innerHeight / H);
       document.getElementById('stage').style.transform = 'translate(-50%,-50%) scale('+s+')';
     }
     window.addEventListener('resize', fit);
@@ -354,25 +345,25 @@
 
     /* ── TSV loader ── */
     let items = [];
-    let currentIdx = parseInt(localStorage.getItem('pn-idx') || '0', 10);
+    let currentIdx = parseInt(localStorage.getItem('pa-idx') || '0', 10);
 
     async function loadTSV(){
       try{
-        const res = await fetch('news.tsv');
+        const res = await fetch('article.tsv');
         const text = await res.text();
         const lines = text.trim().split('\n').slice(1);
         items = lines.map(function(line){
           const c = line.split('\t');
           return { id:c[0]||'', category:c[1]||'', headline:c[2]||'', highlight:c[3]||'',
-                   summary:c[4]||'', source:c[5]||'', date:c[6]||'' };
+                   deck:c[4]||'', kicker:c[5]||'' };
         });
         document.getElementById('totalCount').textContent = '/ ' + items.length;
-        document.getElementById('numInput').max = items.length;
+        document.getElementById('numInput').max = Math.max(1, items.length);
         if(currentIdx >= items.length) currentIdx = 0;
         render(currentIdx);
       } catch(e){
-        console.error('Could not load news.tsv:', e);
-        document.getElementById('headline').textContent = 'Could not load news.tsv — serve over HTTP.';
+        console.error('Could not load article.tsv:', e);
+        document.getElementById('headline').textContent = 'Could not load article.tsv — serve over HTTP.';
       }
     }
 
@@ -384,12 +375,13 @@
       if(!items.length) return;
       n = Math.max(0, Math.min(items.length - 1, n));
       currentIdx = n;
-      localStorage.setItem('pn-idx', String(n));
+      localStorage.setItem('pa-idx', String(n));
       const it = items[n];
 
       document.getElementById('numInput').value = String(n + 1);
-      document.getElementById('catLabel').textContent = it.category || 'NEWS';
+      document.getElementById('catLabel').textContent = it.category || 'ARTICLE';
       applyCatAccent(it.category);
+      setKicker(it.kicker);
 
       const hl = document.getElementById('headline');
       let html = escapeHtml(it.headline);
@@ -399,11 +391,11 @@
       }
       hl.innerHTML = html;
 
-      document.getElementById('summary').textContent = it.summary || '';
+      document.getElementById('deck').textContent = it.deck || '';
       document.getElementById('src').textContent = currentMonthLabel();
       document.getElementById('date').textContent = currentYearLabel();
 
-      range.value = 96;
+      range.value = HEADLINE_CAP;
       fitHeadline();
     }
 
@@ -439,10 +431,9 @@
       range.style.pointerEvents = isAuto ? 'none' : 'auto';
     }
     updateSliderState();
-    autoCheck.addEventListener('change', function(){ updateSliderState(); range.value = 96; fitHeadline(); });
+    autoCheck.addEventListener('change', function(){ updateSliderState(); range.value = HEADLINE_CAP; fitHeadline(); });
 
-    // bind the final two words of the headline so the last line is never one word.
-    // normalizes existing nbsp first to avoid drift across repeated calls.
+    // bind the final two words so the last line is never one word (same as news.html)
     function bindLastTwoWords(el){
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
       const nodes = []; let node;
@@ -460,7 +451,6 @@
       }
     }
 
-    // count rendered line boxes of an element, robust to the inline .hl gradient span
     function lineBoxCount(el){
       const r = document.createRange(); r.selectNodeContents(el);
       const tops = new Set();
@@ -473,7 +463,7 @@
     // rect top) and, once the block wraps to >=2 lines, counts lines that hold a single word.
     // A one-line block cannot strand a word, so it returns 0. skipSel excludes label chrome;
     // pure-punctuation tokens are ignored. The nbsp orphan guard binds the headline's LAST line;
-    // this catches a lone word stranded on ANY line, and covers the summary, which has no bind.
+    // this catches a lone word stranded on ANY line, and covers the deck, which has no bind.
     function strayWordLines(el, skipSel){
       if(!el) return 0;
       const counts = new Map();
@@ -501,23 +491,21 @@
       return stray;
     }
 
-    // HEADLINE LAYOUT RULE (set 2026-07-17): a headline occupies at most 2 lines.
-    // fitHeadline shrinks until the block clears its height budget AND the headline
-    // is <= 2 lines. HEADLINE_FLOOR is the smallest size we will shrink to; if the
-    // copy is still >2 lines at the floor it is simply too long, and measureFit()
-    // reports the violation rather than rendering microscopic text.
+    // BANNER LAYOUT RULE: the headline occupies at most 2 lines on the wide canvas.
+    // Same discipline as news.html (2026-07-17): shrink to fit, floor the size, and
+    // let measureFit() report a violation instead of rendering microscopic type.
+    // Banner type is sized ~2x a poster so it reads in-feed; the auto cap and floor
+    // scale with it. HEADLINE_CAP is the auto-fit starting size and the manual default.
     const HEADLINE_MAXLINES = 2;
-    // Below this size a 78px-design headline reads as microscopic in-feed. If the copy
-    // still needs 3 lines at the floor, it is too long: measureFit() flags it rather
-    // than shrinking further.
-    const HEADLINE_FLOOR = 54;
+    const HEADLINE_CAP = 134;
+    const HEADLINE_FLOOR = 80;
 
     function unbindWords(el){
       const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null); let node;
       while(node = walker.nextNode()){ if(node.nodeValue.indexOf("\u00A0") !== -1) node.nodeValue = node.nodeValue.split("\u00A0").join(" "); }
     }
     function shrinkToFit(hl, content, cap){
-      let size = cap, guard = 0; const maxH = 720;
+      let size = cap, guard = 0; const maxH = 840;
       hl.style.fontSize = size + 'px';
       while(size > HEADLINE_FLOOR && guard < 400 &&
             (content.scrollHeight > maxH || lineBoxCount(hl) > HEADLINE_MAXLINES)){
@@ -528,15 +516,12 @@
 
     function fitHeadline(){
       const hl = document.getElementById('headline');
-      const content = document.querySelector('.news-content');
-      const canvas = document.getElementById('news');
+      const content = document.querySelector('.banner-content');
+      const canvas = document.getElementById('banner');
       if(!hl || !content || !canvas) return;
-      // orphan guard: bind the last two words, unless the user is editing the headline
       if(document.activeElement !== hl) bindLastTwoWords(hl);
-      const cap = autoCheck.checked ? 96 : parseInt(range.value, 10);
+      const cap = autoCheck.checked ? HEADLINE_CAP : parseInt(range.value, 10);
       let size = shrinkToFit(hl, content, cap);
-      // the hard 2-line rule outranks the orphan guard: if the bound last-two-words
-      // pair forced a 3rd line at the floor, drop the bind and try once more.
       if(lineBoxCount(hl) > HEADLINE_MAXLINES){
         unbindWords(hl);
         size = shrinkToFit(hl, content, cap);
@@ -545,37 +530,35 @@
       if(!autoCheck.checked) range.value = size;
     }
 
-    // measureFit(): the reliable, layout-derived fit predictor. Returns the actual
-    // rendered line count of the headline, its final font size, and the summary's
-    // line count plus how full its last line is as a percentage of the summary's
-    // content-box width. The render pipeline (news.mjs) reads this to enforce the
-    // layout rules: headline 1-2 lines; summary exactly 2 lines, last line 75-99% full.
+    // measureFit(): layout-derived fit metrics for the render pipeline (article.mjs).
+    // Rules enforced downstream: headline 1-2 lines; deck 0-2 lines (empty allowed);
+    // when the deck renders 2 lines its second line should not be a stub.
     window.measureFit = function(){
       const hl = document.getElementById('headline');
-      const sm = document.getElementById('summary');
-      const out = { headlineLines: 0, headlineSize: null, summaryLines: 0, summaryFill: 0, summaryWidth: 0, stray: [] };
+      const dk = document.getElementById('deck');
+      const out = { headlineLines: 0, headlineSize: null, deckLines: 0, deckFill: 0, deckWidth: 0, stray: [] };
       if(hl){ out.headlineLines = lineBoxCount(hl); out.headlineSize = Math.round(parseFloat(getComputedStyle(hl).fontSize)); }
-      if(sm){
-        const r = document.createRange(); r.selectNodeContents(sm);
+      if(dk){
+        const r = document.createRange(); r.selectNodeContents(dk);
         const rects = [...r.getClientRects()].filter(x => x.width > 0);
         const tops = [...new Set(rects.map(x => Math.round(x.top)))].sort((a,b) => a - b);
-        out.summaryLines = tops.length || (sm.textContent.trim() ? 1 : 0);
-        out.summaryWidth = Math.round(sm.clientWidth);
+        out.deckLines = tops.length || (dk.textContent.trim() ? 1 : 0);
+        out.deckWidth = Math.round(dk.clientWidth);
         if(tops.length){
           const lastTop = tops[tops.length - 1];
           const last = rects.filter(x => Math.round(x.top) === lastTop);
           const w = Math.max(...last.map(x => x.right)) - Math.min(...last.map(x => x.left));
-          out.summaryFill = out.summaryWidth > 0 ? Math.round((w / out.summaryWidth) * 100) : 0;
+          out.deckFill = out.deckWidth > 0 ? Math.round((w / out.deckWidth) * 100) : 0;
         }
       }
       if(hl && strayWordLines(hl) > 0) out.stray.push('headline');
-      if(sm && strayWordLines(sm) > 0) out.stray.push('summary');
+      if(dk && strayWordLines(dk) > 0) out.stray.push('deck');
       return out;
     };
     range.addEventListener('input', function(){ if(!autoCheck.checked) fitHeadline(); });
-    document.getElementById('news').addEventListener('input', function(e){
+    document.getElementById('banner').addEventListener('input', function(e){
       const id = e.target.id;
-      if(id === 'headline' || id === 'summary'){ if(!autoCheck.checked) range.value = 96; fitHeadline(); }
+      if(id === 'headline' || id === 'deck'){ if(!autoCheck.checked) range.value = HEADLINE_CAP; fitHeadline(); }
       if(id === 'catLabel'){ applyCatAccent(e.target.textContent); }
     });
     document.fonts.ready.then(fitHeadline);
@@ -589,20 +572,20 @@
     }
 
     /* ── background image ── */
-    const newsBg = document.getElementById('newsBg');
+    const bannerBg = document.getElementById('bannerBg');
     function setBackground(src){
-      newsBg.style.backgroundImage =
-        "linear-gradient(180deg, rgba(6,10,18,.18) 0%, rgba(6,10,18,0) 30%, rgba(6,10,18,.55) 100%), url('"+src+"')";
+      bannerBg.style.backgroundImage =
+        "linear-gradient(90deg, rgba(6,10,18,.20) 0%, rgba(6,10,18,0) 40%), url('"+src+"')";
     }
     const bgFileInput = document.getElementById('bgFileInput');
     document.getElementById('bgBtn').addEventListener('click', function(){ bgFileInput.click(); });
     bgFileInput.addEventListener('change', function(e){
       const f = e.target.files[0]; if(!f) return;
-      setBackground(URL.createObjectURL(f)); bgFileInput.value=''; showHint('background set \u2713');
+      setBackground(URL.createObjectURL(f)); bgFileInput.value=''; showHint('background set ✓');
     });
 
-    /* drag-drop anywhere on the card */
-    const card = document.getElementById('news');
+    /* drag-drop anywhere on the banner */
+    const card = document.getElementById('banner');
     ['dragenter','dragover'].forEach(function(ev){
       card.addEventListener(ev, function(e){ e.preventDefault(); card.classList.add('drag'); });
     });
@@ -615,54 +598,14 @@
     });
     card.addEventListener('drop', function(e){
       const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if(f && f.type.indexOf('image')===0){ setBackground(URL.createObjectURL(f)); showHint('background set \u2713'); }
+      if(f && f.type.indexOf('image')===0){ setBackground(URL.createObjectURL(f)); showHint('background set ✓'); }
     });
 
     /* ── reset ── */
     document.getElementById('resetBtn').addEventListener('click', function(){
-      newsBg.style.backgroundImage = ''; // back to gradient default
-      render(currentIdx); showHint('reset \u2713');
+      bannerBg.style.backgroundImage = '';
+      render(currentIdx); showHint('reset ✓');
     });
-
-    /* ── logo / image overlays ── */
-    function getStageScale(){
-      const t = document.getElementById('stage').style.transform;
-      const m = t.match(/scale\(([\d.]+)\)/); return m ? parseFloat(m[1]) : 1;
-    }
-    function makeDraggable(el){
-      let active=false,sx,sy,sl,st;
-      el.addEventListener('mousedown',function(e){
-        if(e.target.classList.contains('q-overlay-resize')||e.target.classList.contains('q-overlay-del')) return;
-        active=true; sx=e.clientX; sy=e.clientY;
-        sl=parseInt(el.style.left)||0; st=parseInt(el.style.top)||0; e.preventDefault();
-      });
-      document.addEventListener('mousemove',function(e){
-        if(!active) return; const sc=getStageScale();
-        el.style.left=(sl+(e.clientX-sx)/sc)+'px'; el.style.top=(st+(e.clientY-sy)/sc)+'px';
-      });
-      document.addEventListener('mouseup',function(){ active=false; });
-    }
-    function makeResizable(el,handle){
-      let active=false,sx,sw;
-      handle.addEventListener('mousedown',function(e){ active=true; sx=e.clientX; sw=el.offsetWidth; e.preventDefault(); e.stopPropagation(); });
-      document.addEventListener('mousemove',function(e){ if(!active) return; const sc=getStageScale(); el.style.width=Math.max(40,sw+(e.clientX-sx)/sc)+'px'; });
-      document.addEventListener('mouseup',function(){ active=false; });
-    }
-    function addOverlay(src){
-      const wrap=document.createElement('div'); wrap.className='q-overlay';
-      wrap.style.cssText='left:120px;top:120px;width:200px;';
-      const img=document.createElement('img'); img.src=src;
-      img.onload=function(){ const r=img.naturalHeight/img.naturalWidth; wrap.style.left='100px'; wrap.style.top='100px'; };
-      const resH=document.createElement('div'); resH.className='q-overlay-resize';
-      const del=document.createElement('div'); del.className='q-overlay-del'; del.textContent='\u00d7';
-      del.addEventListener('click',function(){ wrap.remove(); });
-      wrap.appendChild(img); wrap.appendChild(resH); wrap.appendChild(del);
-      document.getElementById('news').appendChild(wrap);
-      makeDraggable(wrap); makeResizable(wrap,resH);
-    }
-    const imgFileInput = document.getElementById('imgFileInput');
-    document.getElementById('addImgBtn').addEventListener('click',function(){ imgFileInput.click(); });
-    imgFileInput.addEventListener('change',function(e){ const f=e.target.files[0]; if(!f) return; addOverlay(URL.createObjectURL(f)); imgFileInput.value=''; });
 
     /* ── download button (HTTP only) ── */
     (function waitHTI(){
@@ -670,14 +613,14 @@
         const isFile = location.protocol === 'file:';
         const btn = document.getElementById('dlBtn');
         if(isFile){
-          btn.style.display=''; btn.textContent='\u2b07 Download PNG';
+          btn.style.display=''; btn.textContent='⬇ Download PNG';
           btn.title='Serve via HTTP to enable'; btn.style.opacity='0.4'; btn.style.cursor='not-allowed';
-          btn.addEventListener('click',function(e){ e.preventDefault(); showHint('needs HTTP \u00b7 use fullscreen'); });
+          btn.addEventListener('click',function(e){ e.preventDefault(); showHint('needs HTTP · use fullscreen'); });
         } else { btn.style.display=''; }
       } else { setTimeout(waitHTI, 200); }
     })();
 
-    /* ── unsharp mask ── */
+    /* ── unsharp mask (same as news.html) ── */
     function gaussBlur(src,w,h,r){
       const sig=r/2||.6,rad=Math.max(1,Math.ceil(r*2));
       const k=new Float32Array(rad*2+1); let s=0;
@@ -708,31 +651,31 @@
       ctx.putImageData(img,0,0);
     }
 
-    /* ── export pipeline ── */
+    /* ── export pipeline: 1920x1080, pixelRatio 1 (delivery size) ── */
     document.getElementById('dlBtn').addEventListener('click', async function(){
       if(location.protocol==='file:') return;
-      const btn=this, node=document.getElementById('news'), stage=document.getElementById('stage');
+      const btn=this, node=document.getElementById('banner'), stage=document.getElementById('stage');
       btn.textContent='… rendering'; btn.disabled=true;
       const prevT=stage.style.transform, prevH=stage.style.height;
-      stage.style.transform='none'; stage.style.height=SIDE+'px';
+      stage.style.transform='none'; stage.style.height=H+'px';
       await document.fonts.ready; fitHeadline();
       await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
       try{
-        const canvas=await htmlToImage.toCanvas(node,{ width:SIDE, height:SIDE, pixelRatio:2, cacheBust:false, style:{transform:'none'} });
+        const canvas=await htmlToImage.toCanvas(node,{ width:W, height:H, pixelRatio:1, cacheBust:false, style:{transform:'none'} });
         stage.style.transform=prevT; stage.style.height=prevH;
         unsharp(canvas.getContext('2d'),canvas.width,canvas.height,1.0,0.4);
         const num=String(currentIdx+1).padStart(3,'0');
         canvas.toBlob(function(blob){
           const url=URL.createObjectURL(blob);
-          const a=document.createElement('a'); a.href=url; a.download='pietro-news-'+num+'.png';
+          const a=document.createElement('a'); a.href=url; a.download='pietro-article-'+num+'.png';
           document.body.appendChild(a); a.click(); a.remove();
           setTimeout(function(){ URL.revokeObjectURL(url); },4000);
-          btn.textContent='\u2713 downloaded';
-          setTimeout(function(){ btn.textContent='\u2b07 Download PNG'; btn.disabled=false; },2400);
+          btn.textContent='✓ downloaded';
+          setTimeout(function(){ btn.textContent='⬇ Download PNG'; btn.disabled=false; },2400);
         },'image/png');
       }catch(e){
         console.error(e); stage.style.transform=prevT; stage.style.height=prevH;
-        btn.textContent='\u2b07 Download PNG'; btn.disabled=false;
+        btn.textContent='⬇ Download PNG'; btn.disabled=false;
         showHint(String(e).replace('Error:','').trim().slice(0,48));
       }
     });
@@ -752,11 +695,11 @@
       }
       try{
         const span=document.createElement('span'); span.className='hl';
-        r.surroundContents(span); sel.removeAllRanges(); showHint('accent applied \u2713');
+        r.surroundContents(span); sel.removeAllRanges(); showHint('accent applied ✓');
       }catch(e){
         const safe=r.toString().replace(/</g,'&lt;').replace(/>/g,'&gt;');
         document.execCommand('insertHTML',false,'<span class="hl">'+safe+'</span>');
-        showHint('accent applied \u2713');
+        showHint('accent applied ✓');
       }
       fitHeadline();
     }

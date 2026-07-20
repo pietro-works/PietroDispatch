@@ -4,3 +4,4 @@ node_modules/
 renderer/news.tsv
 .change-log.tsv
 .claude/launch.json
+.claude/settings.local.json

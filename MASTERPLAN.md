@@ -6,6 +6,8 @@ This file is written for Claude Code. Read it top to bottom, then follow the bui
 
 Keep all prose you generate free of em dashes, per `HUMANIZE.md`.
 
+Sibling modules: this plan covers the news module only. Two more modules now share the repo and the image pipeline. Slides (evergreen carousels) lives in `.claude/skills/slides/SKILL.md`, `prompts/slides-generation.md`, and `renderer/slides.mjs`. Article (1920x1080 LinkedIn article covers) lives in `.claude/skills/article/SKILL.md`, `prompts/article-generation.md`, and `renderer/article.mjs`. Per-module sequences live in those skills; the module registry is `../pietro-enterprise/registry/modules.json`.
+
 ---
 
 ## 1. The system in one view
@@ -13,7 +15,7 @@ Keep all prose you generate free of em dashes, per `HUMANIZE.md`.
 Four things, nothing else:
 
 - One GitHub repo (this package, fleshed out) connected to Claude Code.
-- One Google Drive folder, `Pietro Dispatch/`, that receives the output.
+- One Google Drive folder, `pietro-works-env/queue/Pietro Dispatch/`, that receives the output.
 - One Claude Code routine on Anthropic cloud, scheduled on odd days, laptop closed.
 - One secret: Pietro's `OPENAI_API_KEY`, set in the routine, never in the repo, never shown to anyone.
 
@@ -122,7 +124,7 @@ Steps 1, 2, and 6 are your reasoning and the connector. Steps 4 and 5 are the tw
 ## 8. Output in Drive
 
 ```
-Pietro Dispatch/
+pietro-works-env/queue/Pietro Dispatch/
   2026-06-01/
     candidate-01-<slug>/
       bg-1.png  bg-2.png            backgrounds, 1080
@@ -145,7 +147,7 @@ One-time, both paths:
 - A GitHub repo with this project, connected to Claude Code.
 - OpenAI Organization Verification completed in the developer console. Without it, GPT Image 2 calls fail. This blocks everything, so do it first.
 - `OPENAI_API_KEY` added as a secret on the routine.
-- Google Drive connected in Claude, with a top-level `Pietro Dispatch/` folder.
+- Google Drive connected in Claude, with a top-level `pietro-works-env/queue/Pietro Dispatch/` folder.
 - The routine created with the day-of-month cron in `routine.txt`.
 
 Daily, cloud path: nothing runs locally.

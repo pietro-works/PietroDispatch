@@ -102,16 +102,86 @@ function renderSlide(s, topic){
     (s.glyphs||[]).forEach((g,i)=>{h+='<span class="g">'+esc(g)+'</span>'+(i<s.glyphs.length-1?'<span class="arr">→</span>':'');});
     if(s.glabel) h+='<span class="gl">'+esc(s.glabel)+'</span>'; h+='</div>';
   } else if(s.type==='C'){
-    h+='<div class="s-title" style="top:150px"><div class="s-kick" style="color:var(--muted)">BEFORE</div>'+esc(s.before)+'</div>';
-    h+='<div class="s-title" style="top:600px"><div class="s-kick" style="color:var(--green)">AFTER</div>'+withHL(s.after,s.hl)+'</div>';
+    h+='<div class="s-title" style="top:150px"><div class="s-kick" style="color:var(--muted)">BEFORE</div>'+esc(s.before).replace(/\n/g,'<br>')+'</div>';
+    h+='<div class="s-title" style="top:600px"><div class="s-kick" style="color:var(--green)">AFTER</div>'+withHL(s.after,s.hl).replace(/\n/g,'<br>')+'</div>';
   } else if(s.type==='contact'){
-    h+='<div class="s-title">'+withHL(s.line[0],null)+'<br>'+withHL(s.line[1],s.hl)+'</div>';
+    h+='<div class="s-title">'+withHL(s.line[0],s.hl)+'<br>'+withHL(s.line[1],s.hl)+'</div>';
     h+='<img class="s-portrait" src="pietro-portrait.png" alt=""/>';
     h+='<div class="s-contact"><div class="nm">'+esc(s.name)+'</div><div class="role">'+esc(s.role)+'</div><div class="cta">'+esc(s.cta)+'</div></div>';
   }
   el.innerHTML=h;
 }
 window.renderSlide=renderSlide;
+
+// count the distinct visual line-boxes a set of nodes occupies, via Range.getClientRects()
+// deduped by rounded top. Robust to the inline .grad gradient span, which puts several
+// rects on one line. This is the slides mirror of news.html's lineBoxCount.
+function lineBoxTops(nodes,set){
+  for(const n of nodes){ const r=document.createRange(); r.selectNodeContents(n);
+    for(const rect of r.getClientRects()){ if(rect.width>0) set.add(Math.round(rect.top)); } }
+  return set;
+}
+
+// strayWordLines(el, skipSel): the shared stray-word guard, identical across news.html,
+// slides.html and article.html. Maps every word in the block to its visual line (a Range
+// rect top) and, once the block wraps to >=2 lines, counts lines that hold a single word.
+// A one-line block cannot strand a word, so it returns 0. skipSel excludes label chrome
+// (slides' .s-kick BEFORE/AFTER and .s-num step numbers); pure-punctuation tokens are ignored.
+function strayWordLines(el, skipSel){
+  if(!el) return 0;
+  const counts = new Map();
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode: function(n){
+      if(skipSel && n.parentElement && n.parentElement.closest(skipSel)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let node;
+  while(node = walker.nextNode()){
+    const re = /\S+/g; let m;
+    while(m = re.exec(node.nodeValue)){
+      if(!/[\p{L}\p{N}]/u.test(m[0])) continue;
+      const r = document.createRange(); r.setStart(node, m.index); r.setEnd(node, m.index + m[0].length);
+      const tops = new Set();
+      for(const rect of r.getClientRects()){ if(rect.width > 0) tops.add(Math.round(rect.top)); }
+      // a word that wraps (a hyphenated compound like "one-afternoon") belongs to EVERY line it
+      // touches, so its continuation counts toward that line instead of leaving a neighbour looking alone
+      tops.forEach(function(t){ counts.set(t, (counts.get(t) || 0) + 1); });
+    }
+  }
+  if(counts.size < 2) return 0;
+  let stray = 0; counts.forEach(function(c){ if(c === 1) stray++; });
+  return stray;
+}
+
+// measureFit(): the layout-derived disposition check slides.mjs reads under --check-fit.
+// Named measureFit (not measureSlideFit) to match news.html/article.html: every template
+// exposes window.measureFit and every driver has a fitVerdict, a uniform contract. The slides
+// renderer has no auto-fit (fixed sizes, hardcoded <br> breaks), so this is measure-only.
+//   hlLines    = visual lines the .grad gradient accent crosses, unioned across every .grad
+//                span so a wrapped accent counts once per line, not once per rect.
+//   titleLines = per title/hero (.s-title), the visual line count of its text. Measured over the
+//                title's child nodes individually, skipping the block-level .s-kick label that
+//                C's BEFORE/AFTER blocks carry. A Range spanning that block boundary would
+//                otherwise pick up a phantom block-box rect and overcount by one line.
+//   stray      = labels of wrapped blocks that strand a lone word on a line (uniform field,
+//                shared shape with news/article); empty when clean.
+// The rule: the gradient hl accent stays within 2 lines, no title/hero breaks past 2 lines,
+// and no wrapped block (title, hero, C before/after, A step) strands a single word.
+window.measureFit = function(){
+  const grads=[...document.querySelectorAll('.grad')];
+  const hlLines=grads.length ? lineBoxTops(grads,new Set()).size : 0;
+  const titleLines=[...document.querySelectorAll('.s-title')].map(function(t){
+    const parts=[...t.childNodes].filter(function(n){
+      return !(n.nodeType===1 && n.classList && n.classList.contains('s-kick'));
+    });
+    return lineBoxTops(parts,new Set()).size;
+  });
+  const stray=[];
+  [...document.querySelectorAll('.s-title')].forEach(function(t,i){ if(strayWordLines(t,'.s-kick')>0) stray.push('title'+(i+1)); });
+  [...document.querySelectorAll('.s-step')].forEach(function(s,i){ if(strayWordLines(s,'.s-num')>0) stray.push('step'+(i+1)); });
+  return { hlLines:hlLines, titleLines:titleLines, titleMax:titleLines.length?Math.max.apply(null,titleLines):0, stray:stray };
+};
 
 // standalone preview: load slides.json if present, else a built-in sample. ?card=N picks a slide.
 const SAMPLE={topic:'IN_THE_LOOP.MD',slides:[
