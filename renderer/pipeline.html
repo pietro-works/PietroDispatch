@@ -1,0 +1,121 @@
+<!DOCTYPE html><!-- Pietro.works pipeline fluxogram template. Reusable diagram renderer for README/docs.
+     Render with: node renderer/pipeline.mjs  (writes docs/assets/pipeline.webp). Edit the cards/glyphs below. --><html lang="en"><head>
+<meta charset="utf-8"/>
+<style>
+@font-face{font-family:'Clash Display';src:url('fonts/clash-600.woff2') format('woff2');font-weight:600;font-display:block;}
+@font-face{font-family:'Clash Display';src:url('fonts/clash-700.woff2') format('woff2');font-weight:700;font-display:block;}
+</style>
+<link rel="stylesheet" href="fonts/dm.local.css"/>
+<style>
+  :root{--ink:#eef4ff;--muted:#9fb0d0;--dim:#6b7da0;--cyan:#39e8ff;--green:#00ff99;--purple:#a855f7;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#04070d;}
+  #diagram{position:relative;width:1600px;height:548px;overflow:hidden;background:#05080f;
+    font-family:'DM Sans',sans-serif;color:var(--ink);isolation:isolate;}
+  .grad{position:absolute;inset:0;z-index:0;background:
+    radial-gradient(ellipse 60% 80% at 12% 6%, rgba(57,232,255,.10), transparent 60%),
+    linear-gradient(160deg,#0a1324 0%,#080f1d 55%,#05090f 100%);}
+  .photo{position:absolute;inset:0;z-index:1;background:url('pipeline-bg.jpg') 43% 30%/cover;
+    opacity:.5;filter:saturate(.7) contrast(1.04) brightness(.92);}
+  .scrim{position:absolute;inset:0;z-index:2;pointer-events:none;background:
+    linear-gradient(180deg,rgba(5,8,15,.72) 0%,rgba(5,8,15,.28) 24%,rgba(5,8,15,.3) 66%,rgba(5,8,15,.82) 100%),
+    radial-gradient(120% 130% at 74% 40%, transparent 44%, rgba(5,8,15,.5) 100%);}
+  .dots{position:absolute;inset:0;z-index:3;opacity:.12;mix-blend-mode:screen;
+    background-image:image-set("hero-dot-matrix-static.avif" 1x type("image/avif"),"hero-dot-matrix-static.webp" 1x type("image/webp"),"hero-dot-matrix-static.png" 1x type("image/png"));
+    background-position:50% -30%;background-repeat:no-repeat;background-size:cover;
+    -webkit-mask-image:radial-gradient(120% 130% at 82% -10%,#000 0%,#000 24%,transparent 56%);
+    mask-image:radial-gradient(120% 130% at 82% -10%,#000 0%,#000 24%,transparent 56%);}
+  .frame{position:absolute;z-index:4;inset:26px;border:1px solid rgba(180,205,255,.14);border-radius:8px;pointer-events:none;}
+  .wrap{position:absolute;z-index:5;inset:56px 72px;display:flex;flex-direction:column;}
+  header{display:flex;justify-content:space-between;align-items:center;font-family:'DM Mono',monospace;font-size:17px;letter-spacing:.14em;}
+  .kick{display:inline-flex;align-items:center;gap:11px;color:#eaf3ff;border:1px solid rgba(120,200,255,.3);border-radius:100px;padding:9px 18px;text-transform:uppercase;background:rgba(6,10,18,.34);backdrop-filter:blur(3px);}
+  .kick .d{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);}
+  .flow{text-transform:uppercase;color:#9db0cf;text-shadow:0 1px 10px rgba(0,0,0,.7);}
+  .flow b{font-weight:500;background:linear-gradient(105deg,var(--cyan),var(--green) 52%,var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .row{flex:1;display:flex;align-items:center;justify-content:space-between;margin:4px 0;}
+  .card{position:relative;width:216px;height:252px;border-radius:16px;padding:22px;
+    background:rgba(10,17,32,.72);border:1px solid rgba(180,205,255,.14);backdrop-filter:blur(4px) saturate(1.05);
+    box-shadow:0 24px 60px -30px rgba(0,0,0,.8);display:flex;flex-direction:column;}
+  .card .num{font-family:'DM Mono',monospace;font-size:14px;color:var(--dim);letter-spacing:.06em;}
+  .glyph{width:50px;height:50px;margin:4px 0 12px;color:var(--cyan);filter:drop-shadow(0 0 14px rgba(57,232,255,.4));}
+  .glyph svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+  .glyph.filled svg{fill:currentColor;stroke:currentColor;stroke-width:150;stroke-linejoin:round;stroke-linecap:round;}
+  .name{font-family:'Clash Display',sans-serif;font-weight:600;font-size:29px;line-height:1;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.5);}
+  .lines{margin-top:17px;font-family:'DM Mono',monospace;font-size:14px;line-height:1.5;color:#a9b8d4;white-space:nowrap;}
+  .lines .hi{color:#bfefff;}
+  .lines .hg{color:#8affc9;}
+  .card.gate{width:250px;background:rgba(14,24,44,.86);border:1.5px solid transparent;backdrop-filter:blur(4px) saturate(1.05);
+    background-image:linear-gradient(rgba(14,24,44,.9),rgba(14,24,44,.9)),linear-gradient(150deg,var(--cyan),var(--green) 50%,var(--purple));
+    background-origin:border-box;background-clip:padding-box,border-box;
+    box-shadow:0 0 0 1px rgba(0,255,153,.06),0 26px 70px -28px rgba(0,180,140,.45);}
+  .card.gate .glyph{color:#fff;filter:drop-shadow(0 0 16px rgba(0,255,153,.55));}
+  .card.gate .glyph svg{stroke:url(#gg);}
+  .tag{align-self:flex-start;margin-top:14px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;
+    padding:5px 11px;border-radius:6px;color:#04140d;font-weight:500;
+    background:linear-gradient(105deg,var(--cyan),var(--green) 55%,var(--purple));}
+  .arr{font-family:'DM Mono',monospace;font-size:22px;color:#7f93b6;padding:0 4px;flex:0 0 auto;text-shadow:0 1px 8px rgba(0,0,0,.8);}
+  footer{display:flex;justify-content:space-between;align-items:center;font-family:'DM Mono',monospace;font-size:16px;letter-spacing:.05em;color:#8194b5;text-shadow:0 1px 10px rgba(0,0,0,.7);}
+  footer .value{color:#eaf3ff;}
+  footer .value b{font-weight:500;background:linear-gradient(105deg,var(--cyan),var(--green) 52%,var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent;}
+</style>
+</head>
+<body>
+<div id="diagram">
+  <div class="grad"></div><div class="photo"></div><div class="scrim"></div><div class="dots"></div><div class="frame"></div>
+  <svg width="0" height="0" style="position:absolute"><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#39e8ff"/><stop offset=".55" stop-color="#00ff99"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs></svg>
+  <div class="wrap">
+    <header>
+      <span class="kick"><span class="d"></span>The pipeline</span>
+      <span class="flow">generate · <b>gate</b> · ship</span>
+    </header>
+    <div class="row">
+      <div class="card">
+        <span class="num">01</span>
+        <div class="glyph"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg></div>
+        <div class="name">Curate</div>
+        <div class="lines">sources in full<br><span class="hi">no unsourced claim</span></div>
+      </div>
+      <span class="arr">→</span>
+      <div class="card">
+        <span class="num">02</span>
+        <div class="glyph"><svg viewBox="0 0 24 24"><polyline points="9 7 4 12 9 17"/><polyline points="15 7 20 12 15 17"/></svg></div>
+        <div class="name">Write</div>
+        <div class="lines">brand voice, a file<br><span class="hg">humanized</span>, not raw</div>
+      </div>
+      <span class="arr">→</span>
+      <div class="card">
+        <span class="num">03</span>
+        <div class="glyph"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M4 17l4.5-4.5 3.5 3.5 3-3 5 5"/></svg></div>
+        <div class="name">Illustrate</div>
+        <div class="lines">GPT Image 2<br>one warm accent</div>
+      </div>
+      <span class="arr">→</span>
+      <div class="card">
+        <span class="num">04</span>
+        <div class="glyph"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></div>
+        <div class="name">Render</div>
+        <div class="lines">headless Chrome<br>2160, <span class="hi">fit-measured</span></div>
+      </div>
+      <span class="arr">→</span>
+      <div class="card gate">
+        <span class="num">05</span>
+        <div class="glyph"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 9-4-1.3-7-4.4-7-9V6l7-3z"/><polyline points="8.8 12 11.2 14.4 15.6 9.6"/></svg></div>
+        <div class="name">Gate</div>
+        <div class="lines"><span class="hi">two adversarial passes</span><br>voice, then contract</div>
+        <span class="tag">a fail is a rewrite</span>
+      </div>
+      <span class="arr">→</span>
+      <div class="card">
+        <span class="num">06</span>
+        <div class="glyph filled"><svg viewBox="-34 -26 580 580"><g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor"><path d="M2222 4535 c-538 -82 -1005 -421 -1245 -903 -61 -121 -111 -263 -141 -394 -4 -19 -13 -28 -26 -28 -33 0 -182 -51 -255 -88 -151 -75 -287 -192 -374 -321 -63 -92 -127 -234 -153 -337 -32 -127 -32 -341 0 -468 47 -187 129 -333 262 -467 133 -134 258 -209 445 -266 l90 -27 397 -4 c437 -4 441 -3 473 58 20 40 19 79 -5 118 -37 60 -52 62 -437 62 -315 0 -356 2 -432 20 -232 56 -436 234 -528 460 -183 453 118 963 609 1032 116 16 138 38 162 168 107 561 536 1001 1105 1131 137 32 375 37 526 11 462 -79 837 -360 1047 -783 29 -59 60 -106 75 -116 19 -13 60 -19 152 -24 191 -12 331 -56 479 -152 145 -95 252 -217 332 -380 75 -153 95 -241 95 -417 0 -175 -20 -262 -95 -416 -109 -224 -293 -392 -519 -474 -143 -52 -206 -60 -487 -60 -284 0 -309 -4 -344 -62 -36 -59 -18 -133 40 -163 42 -22 529 -22 656 0 428 74 793 384 929 789 48 143 58 211 58 386 0 175 -10 243 -58 386 -146 435 -567 766 -1018 801 l-78 6 -29 57 c-16 31 -55 97 -89 146 -242 362 -621 615 -1057 705 -131 27 -428 34 -562 14z"/><g transform="translate(0,571) scale(1,1.195) translate(0,-571)"><path d="M2525 2709 c-41 -12 -821 -793 -830 -832 -23 -91 56 -171 143 -147 29 7 98 71 319 292 l283 283 0 -819 c0 -897 -2 -863 59 -899 36 -21 83 -22 121 -2 63 32 60 -6 60 897 l0 823 283 -283 c297 -297 314 -310 380 -291 70 19 107 102 74 165 -22 41 -799 814 -819 814 -9 0 -22 2 -30 4 -7 2 -26 0 -43 -5z"/></g></g></svg></div>
+        <div class="name">Deliver</div>
+        <div class="lines">only what passed<br>into a dated folder</div>
+      </div>
+    </div>
+    <footer>
+      <span>three topics · two variations each</span>
+      <span class="value">nothing ships that <b>fails a check</b></span>
+    </footer>
+  </div>
+</div>
+</body></html>

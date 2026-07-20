@@ -143,8 +143,9 @@ pietro-dispatch/
     news.html    news.mjs     dispatch template, 2160 export
     slides.html  slides.mjs   sliders template, 2160 export plus square-PDF stitch
     article.html article.mjs  article cover template, 1920x1080 export
+    pipeline.html pipeline.mjs  the flow diagram on this page, re-renderable
     fonts/                    self-hosted Clash and DM woff2
-    *.png/.webp/.avif         render-time brand assets
+    *.png/.webp/.avif/.jpg    render-time brand assets
   pipeline/
     generate-images.mjs       GPT Image 2 backgrounds, shared by all three
   .claude/skills/             the dispatch, slides, and article run skills
