@@ -160,6 +160,12 @@ Both feed generators run on a schedule now, firing locally and delivering to Dri
 
 <div align="center">
 
-Designed, written, and rendered for **Pietro<sup>.works</sup>**. The brand system is proprietary; the pipeline is shared as a reference build.
+<img src="docs/assets/pietro.webp" width="132" alt="Pietro Impagliazzo"/>
+
+**Pietro Impagliazzo** · AI Workflow Architect
+
+[pietro.works](https://pietro.works) · [linkedin.com/in/pietro-works](https://linkedin.com/in/pietro-works)
+
+Designed, written, and rendered for Pietro<sup>.works</sup>. The brand system is proprietary, the pipeline is shared as a reference build.
 
 </div>
