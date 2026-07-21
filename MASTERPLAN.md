@@ -6,7 +6,7 @@ This file is written for Claude Code. Read it top to bottom, then follow the bui
 
 Keep all prose you generate free of em dashes, per `HUMANIZE.md`.
 
-Sibling modules: this plan covers the news module only. Two more modules now share the repo and the image pipeline. Slides (evergreen carousels) lives in `.claude/skills/slides/SKILL.md`, `prompts/slides-generation.md`, and `renderer/slides.mjs`. Article (1920x1080 LinkedIn article covers) lives in `.claude/skills/article/SKILL.md`, `prompts/article-generation.md`, and `renderer/article.mjs`. Per-module sequences live in those skills; the module registry is `../pietro-enterprise/registry/modules.json`.
+Sibling modules: this plan covers the news module only. Three more modules now share the repo, and the two feed ones share the image pipeline. Slides (evergreen carousels) lives in `.claude/skills/slides/SKILL.md`, `prompts/slides-generation.md`, and `renderer/slides.mjs`. Article (1920x1080 LinkedIn article covers) lives in `.claude/skills/article/SKILL.md`, `prompts/article-generation.md`, and `renderer/article.mjs`. Fluxograms (evergreen wide flow diagrams, one 2400x822 PNG per concept) live in `.claude/skills/fluxogram/SKILL.md`, `prompts/fluxogram-generation.md`, and `renderer/fluxogram.{html,mjs}`; unlike the feed modules a fluxogram does not call GPT Image 2, it composites a picked background from the shared bg-db. Per-module sequences live in those skills; the module registry is `../pietro-enterprise/registry/modules.json`.
 
 ---
 

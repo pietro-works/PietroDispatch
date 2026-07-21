@@ -8,6 +8,7 @@
  *   slides deck -> slides-NNN.pdf,  slides-NNN.png (cover),  caption-slides-NNN.txt
  *   article     -> article-NNN.png (+ -b), bg-article-NNN.png (+ -b), caption-article-NNN.txt
  *   tutorial    -> tutorial-NNN.png, bg-tutorial-NNN.png,    caption-tutorial-NNN.txt
+ *   fluxogram   -> pietro-fluxo-NNN.png, pietro-fluxo-NNN.json (spec, re-renderable), caption-pietro-fluxo-NNN.txt
  *
  * NNN is the next free integer for that type (max existing + 1), zero-padded to 3.
  * It COPIES (never moves): the structured queue folder stays put for Studio to post from.
@@ -15,7 +16,7 @@
  * re-passing folders you already archived.
  *
  * Usage:
- *   node archive-to-dispatch-posts.mjs <delivery-folder> [--type news|slides|article|tutorial] [--archive <dir>] [--dry-run]
+ *   node archive-to-dispatch-posts.mjs <delivery-folder> [--type news|slides|article|tutorial|fluxo] [--archive <dir>] [--dry-run]
  *     <delivery-folder> = a news candidate-NN-slug/ dir, a slides or article <date>-slug/ dir, or a tutorial png's folder.
  *   Type is auto-detected from the folder contents when not given.
  */
@@ -46,6 +47,7 @@ const exists = async (p) => { try { await stat(p); return true; } catch { return
 // validate-contract.mjs, scan-assets.mjs, this detectType, modules.json — AGENTS.md
 async function detectType(folder) {
   const names = await readdir(folder);
+  if (names.includes('spec.json') && names.includes('fluxogram.png')) return 'fluxo';
   if (names.includes('slides.pdf')) return 'slides';
   if (names.some((n) => /^banner-[12]\.png$/.test(n))) return 'article';
   if (names.some((n) => /^post-[12]\.png$/.test(n))) return 'news';
@@ -53,10 +55,10 @@ async function detectType(folder) {
   throw new Error(`cannot detect asset type in ${folder}`);
 }
 
-async function nextIndex(archive, type) {
+async function nextIndex(archive, prefix) {
   await mkdir(archive, { recursive: true });
   const files = await readdir(archive);
-  const re = new RegExp(`^${type}-(\\d{3})(?:-b)?\\.`);
+  const re = new RegExp(`^${prefix}-(\\d{3})(?:-b)?\\.`);
   let max = -1;
   for (const f of files) { const m = f.match(re); if (m) max = Math.max(max, Number(m[1])); }
   return max + 1;
@@ -66,7 +68,8 @@ const pad = (n) => String(n).padStart(3, '0');
 async function archiveOne(o) {
   const folder = resolve(o.folder);
   const type = o.type || await detectType(folder);
-  const nnn = pad(await nextIndex(o.archive, type));
+  const prefix = type === 'fluxo' ? 'pietro-fluxo' : type;
+  const nnn = pad(await nextIndex(o.archive, prefix));
   const plan = []; // [srcRel, destName]
 
   if (type === 'news') {
@@ -92,17 +95,21 @@ async function archiveOne(o) {
     if (png) plan.push([png, `tutorial-${nnn}.png`]);
     if (bg) plan.push([bg, `bg-tutorial-${nnn}.png`]);
     if (names.includes('caption.txt')) plan.push(['caption.txt', `caption-tutorial-${nnn}.txt`]);
+  } else if (type === 'fluxo') {
+    if (await exists(join(folder, 'fluxogram.png'))) plan.push(['fluxogram.png', `pietro-fluxo-${nnn}.png`]);
+    if (await exists(join(folder, 'spec.json'))) plan.push(['spec.json', `pietro-fluxo-${nnn}.json`]);
+    if (await exists(join(folder, 'caption.txt'))) plan.push(['caption.txt', `caption-pietro-fluxo-${nnn}.txt`]);
   } else throw new Error(`unknown type ${type}`);
 
   if (!plan.length) throw new Error(`nothing to archive from ${folder} (type ${type})`);
-  console.log(`${basename(folder)} -> ${type}-${nnn}`);
+  console.log(`${basename(folder)} -> ${prefix}-${nnn}`);
   for (const [src, dest] of plan) {
     console.log(`  ${src}  ->  ${dest}`);
     if (!o.dryRun) await copyFile(join(folder, src), join(o.archive, dest));
   }
-  return { type, nnn, count: plan.length };
+  return { type, prefix, nnn, count: plan.length };
 }
 
 const o = parseArgs();
-archiveOne(o).then((r) => console.log(o.dryRun ? '(dry-run, nothing written)' : `archived ${r.count} files as ${r.type}-${r.nnn}`))
+archiveOne(o).then((r) => console.log(o.dryRun ? '(dry-run, nothing written)' : `archived ${r.count} files as ${r.prefix}-${r.nnn}`))
   .catch((e) => { console.error(e.message); process.exit(1); });

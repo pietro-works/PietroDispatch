@@ -1,6 +1,6 @@
-<!DOCTYPE html><!-- Pietro.works pipeline / fluxogram template. Reusable 6-card flow diagram for README and LinkedIn.
+<!DOCTYPE html><!-- Pietro.works fluxogram template. Reusable 6-card flow diagram for README and LinkedIn.
      Data-driven: renderFluxo(spec) builds the cards from a spec; the default spec is the content pipeline.
-     Render with: node renderer/pipeline.mjs [--data spec.json] [--out out.png] [--format png|webp]. -->
+     Render with: node renderer/fluxogram.mjs [--data spec.json] [--out out.png] [--format png|webp]. -->
 <html lang="en"><head>
 <meta charset="utf-8"/>
 <style>
@@ -17,7 +17,7 @@
   .grad{position:absolute;inset:0;z-index:0;background:
     radial-gradient(ellipse 60% 80% at 12% 6%, rgba(57,232,255,.10), transparent 60%),
     linear-gradient(160deg,#0a1324 0%,#080f1d 55%,#05090f 100%);}
-  .photo{position:absolute;inset:0;z-index:1;background:url('pipeline-bg.jpg') 43% 30%/cover;
+  .photo{position:absolute;inset:0;z-index:1;background:url('fluxogram-bg.jpg') 43% 30%/cover;
     opacity:.5;filter:saturate(.7) contrast(1.04) brightness(.92);}
   .scrim{position:absolute;inset:0;z-index:2;pointer-events:none;background:
     linear-gradient(180deg,rgba(5,8,15,.72) 0%,rgba(5,8,15,.28) 24%,rgba(5,8,15,.3) 66%,rgba(5,8,15,.82) 100%),

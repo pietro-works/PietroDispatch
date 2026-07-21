@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * pipeline.mjs — render the reusable fluxogram template (renderer/pipeline.html) to a webp,
+ * fluxogram.mjs — render the reusable fluxogram template (renderer/fluxogram.html) to a webp,
  * headless, at 2x, then downscale for a crisp asset. Same CDP + static-server approach as the
- * other renderers. Edit renderer/pipeline.html (cards, glyphs, copy, background) and re-run this
+ * other renderers. Edit renderer/fluxogram.html (cards, glyphs, copy, background) and re-run this
  * to regenerate the diagram used in the README and docs.
  *
  * Usage:
- *   node renderer/pipeline.mjs [--data spec.json] [--out out.webp] [--format png|webp] [--width 1600] [--chrome <path>]
+ *   node renderer/fluxogram.mjs [--data spec.json] [--out out.webp] [--format png|webp] [--width 1600] [--chrome <path>]
  *
  * Without --data it renders the default content pipeline (docs/assets/pipeline.webp). With --data it
- * injects a fluxo spec (see renderFluxo in pipeline.html): { kick, flow, cards[], footL, footR, bg }.
+ * injects a fluxo spec (see renderFluxo in fluxogram.html): { kick, flow, cards[], footL, footR, bg }.
  * spec.bg is an image path (absolute or relative to the spec file); it is inlined as a data URL.
  * The template is 1600x548 CSS px, renders at deviceScaleFactor 2, and is written to --out at --width.
  */
@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const RENDERER_DIR = dirname(fileURLToPath(import.meta.url));
-const PAGE = 'pipeline.html';
+const PAGE = 'fluxogram.html';
 const CSS_W = 1600, CSS_H = 548;
 
 function parseArgs() {

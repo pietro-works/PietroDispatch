@@ -105,6 +105,14 @@ The third track makes cover banners for LinkedIn articles. Same brand system, sa
 
 This track has no schedule, on purpose. A cover gets made when an article is ready and goes up by hand when it publishes.
 
+## Fluxograms, the fourth track
+
+The pipeline diagram near the top of this page is not a drawing. It came out of a fourth generator, the same headless Chrome, pointed at one job: take a durable idea and lay it out as a wide six-step flow. One concept, six cards left to right, a pivot in the middle that carries the whole point. A value line runs along the bottom, and the thing reads in one glance and stays true a year later.
+
+The look is shared. It takes one warm background from a small cold-steel library instead of a fresh GPT Image 2 paint, then lays the brand scrim and gradient accent over it. A spec is a small JSON file, so a fluxogram is re-renderable: change a card, run it again, get a clean 2400 by 822 PNG. Four are out so far, on the eval loop, build versus buy, keeping a human in the loop, and cutting the model bill.
+
+Like article covers, this track stays off the calendar. A fluxogram gets made when an idea is worth teaching, not on a clock.
+
 ## Scheduling and the queue
 
 ![Pietro Studio](docs/assets/studio.webp)
@@ -138,17 +146,18 @@ pietro-dispatch/
     curation.md  generation.md          dispatch: pick and write the stories
     slides-curation.md  slides-generation.md   sliders: pick and design the deck
     article-generation.md     article: write the cover
+    fluxogram-generation.md   fluxograms: design the flow spec
     slides-sources.yaml       the evergreen scan map
   renderer/
     news.html    news.mjs     dispatch template, 2160 export
     slides.html  slides.mjs   sliders template, 2160 export plus square-PDF stitch
     article.html article.mjs  article cover template, 1920x1080 export
-    pipeline.html pipeline.mjs  the flow diagram on this page, re-renderable
+    fluxogram.html fluxogram.mjs  the flow-diagram (fluxogram) renderer, re-renderable
     fonts/                    self-hosted Clash and DM woff2
     *.png/.webp/.avif/.jpg    render-time brand assets
   pipeline/
     generate-images.mjs       GPT Image 2 backgrounds, shared by all three
-  .claude/skills/             the dispatch, slides, and article run skills
+  .claude/skills/             the dispatch, slides, article, and fluxogram run skills
   sources.yaml                the dispatch source pool
   docs/
     sliders-preview.html      the live, swipeable deck
@@ -157,7 +166,7 @@ pietro-dispatch/
 
 ## Status
 
-Both feed generators run on a schedule now, firing locally and delivering to Drive untouched. Article covers stay the deliberate exception, made on demand. Built as a study in AI-assisted rapid iteration: encode the taste once, then let the machine do the repetitive part and keep the human on the decision.
+Both feed generators run on a schedule now, firing locally and delivering to Drive untouched. Article covers and fluxograms stay the deliberate exceptions, made on demand. Built as a study in AI-assisted rapid iteration: encode the taste once, then let the machine do the repetitive part and keep the human on the decision.
 
 ---
 
