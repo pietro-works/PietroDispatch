@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pietro Studio</title>
+<style>
+@font-face{font-family:'Clash Display';src:url('/renderer/fonts/clash-600.woff2') format('woff2');font-weight:600;font-display:swap;}
+</style>
+<link rel="stylesheet" href="/renderer/fonts/dm.local.css">
+<style>
+  :root{
+    --bg:#04070d; --panel:rgba(10,17,32,.55); --card:rgba(10,17,32,.72); --line:rgba(180,205,255,.14); --line2:rgba(120,200,255,.3);
+    --tx:#eef4ff; --mut:#9fb0d0; --dim:#6b7da0; --cyan:#39e8ff; --green:#00ff99; --amber:#f5b54a; --red:#f87171; --purple:#a855f7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#04070d;color:var(--tx);font:15px/1.5 'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;background:
+    radial-gradient(ellipse 55% 45% at 18% 0%, rgba(57,232,255,.08), transparent 60%),
+    radial-gradient(ellipse 45% 40% at 88% 100%, rgba(168,85,247,.06), transparent 60%),
+    linear-gradient(160deg,#0a1324 0%,#070d1a 45%,#04070d 100%);}
+  .wrap{max-width:1280px;margin:0 auto;padding:30px 26px 150px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:24px}
+  .back{display:inline-flex;align-items:center;gap:8px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--mut);text-decoration:none;border:1px solid var(--line2);border-radius:100px;
+    padding:7px 14px;margin-bottom:12px;background:rgba(6,10,18,.4);transition:.15s}
+  .back:hover{color:#fff;border-color:var(--cyan)}
+  h1{font-family:'Clash Display',sans-serif;font-size:30px;font-weight:600;margin:0;letter-spacing:.2px;color:#fff}
+  h1 .dim{color:var(--dim);font-weight:600}
+  .sub{color:var(--mut);font-size:12.5px;margin-top:6px;font-family:'DM Mono',monospace;letter-spacing:.04em}
+  .filters{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.06em;color:var(--mut);background:transparent;
+    border:1px solid var(--line2);padding:6px 14px;border-radius:999px;cursor:pointer;transition:.12s}
+  .chip:hover{color:var(--tx);border-color:var(--cyan)}
+  .chip.on{color:#04121a;background:var(--cyan);border-color:var(--cyan);font-weight:600}
+  .tabs{display:flex;gap:8px;margin-bottom:20px}
+  .tab{font-family:'DM Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;
+    color:var(--mut);background:var(--panel);border:1px solid var(--line);padding:9px 20px;border-radius:10px;cursor:pointer;transition:.12s}
+  .tab:hover{border-color:var(--line2)}
+  .tab.on{color:#04121a;background:linear-gradient(105deg,var(--cyan),#5fefff);border-color:var(--cyan);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;transition:.14s;position:relative}
+  .card:hover{border-color:var(--line2);transform:translateY(-2px);box-shadow:0 24px 60px -30px rgba(0,0,0,.85)}
+  .card.sel{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 0 30px -8px rgba(57,232,255,.4)}
+  .thumbwrap{position:relative;aspect-ratio:1/1;background:#0c1320;overflow:hidden}
+  .card.wide .thumbwrap{aspect-ratio:16/9}
+  .card.manual{cursor:default}
+  .thumbwrap img{width:100%;height:100%;object-fit:cover;display:block}
+  /* fluxograms are ~2.9:1; fill the 16:9 tile from the left, clip the right (show the start of the flow) */
+  .card.flux .thumbwrap img{object-fit:cover;object-position:left center}
+  .check{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:rgba(4,7,13,.6);
+    border:1.5px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;backdrop-filter:blur(4px)}
+  .card.sel .check{background:var(--cyan);border-color:var(--cyan);color:#04121a}
+  .meta{padding:13px 15px 15px}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .kind{font-family:'DM Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  .pill{margin-left:auto;white-space:nowrap;font-family:'DM Mono',monospace;font-size:10.5px;font-weight:500;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
+  .cap{font-size:13.5px;color:#cdd8ec;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:60px}
+  .date{margin-top:9px;font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:rgba(6,10,19,.9);backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+  .barin{max-width:1280px;margin:0 auto;padding:14px 26px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .barin .brand{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#fff;white-space:nowrap;margin-right:14px}
+  .barin .brand sup{color:var(--cyan);font-size:.6em;text-transform:none}
+  .barin .info{font-family:'DM Mono',monospace;font-size:12.5px;color:var(--mut);letter-spacing:.04em}
+  .barin .info b{color:var(--tx);font-weight:500}
+  .pub{margin-left:auto;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.04em;color:#04121a;
+    background:linear-gradient(105deg,var(--cyan),#5fefff);border:none;padding:11px 22px;border-radius:10px;cursor:pointer;transition:.12s}
+  .pub.gr{background:linear-gradient(105deg,var(--green),var(--cyan))}
+  .pub:disabled{background:#1a2740;color:var(--dim);cursor:default}
+  .pub:not(:disabled):hover{filter:brightness(1.1)}
+  .ghost{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.04em;font-weight:500;color:var(--mut);background:transparent;
+    border:1px solid var(--line2);padding:10px 16px;border-radius:10px;cursor:pointer;transition:.12s}
+  .ghost:hover{color:var(--tx);border-color:var(--cyan)}
+  .note{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    font-size:12.5px;color:#cdd8ec;display:none;white-space:pre-wrap;font-family:'DM Mono',monospace;max-height:280px;overflow:auto}
+  .note.show{display:block}
+  .banner{background:rgba(245,181,74,.1);border:1px solid rgba(245,181,74,.35);color:#ffd9a0;border-radius:12px;
+    padding:11px 16px;font-family:'DM Mono',monospace;font-size:12.5px;margin-bottom:18px;display:none}
+  .banner.show{display:block}
+  .banner code{color:var(--cyan)}
+  /* ---- week planner ---- */
+  .tray{display:flex;gap:10px;overflow-x:auto;padding:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:18px;min-height:96px}
+  .tray:empty::after{content:'nothing unscheduled — hit Refresh queue';color:var(--dim);font-family:'DM Mono',monospace;font-size:12px;align-self:center;padding:0 8px}
+  .tchip{flex:0 0 auto;width:150px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:grab;user-select:none;transition:.12s}
+  .tchip:hover{border-color:var(--line2)}
+  .tchip:active{cursor:grabbing}
+  .tchip img{width:100%;height:64px;object-fit:cover;display:block;pointer-events:none}
+  .tchip .tt{padding:7px 9px;font-size:11.5px;line-height:1.35;color:#cdd8ec;pointer-events:none}
+  .tchip .ty{font-family:'DM Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--cyan);display:block}
+  .tchip.dragging{opacity:.4}
+  .week{display:grid;grid-template-columns:52px repeat(7,1fr);gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .whead{font-family:'DM Mono',monospace;font-size:10.5px;text-align:center;color:var(--dim);padding:4px 0 8px;letter-spacing:.08em;text-transform:uppercase}
+  .whead b{display:block;color:var(--tx);font-size:13px;font-weight:500}
+  .whead.today b{color:var(--cyan);text-shadow:0 0 12px rgba(57,232,255,.5)}
+  .hlab{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);text-align:right;padding-right:8px;line-height:34px}
+  .cell{height:34px;border:1px dashed var(--line);border-radius:7px;position:relative;font-size:10.5px;overflow:hidden;transition:border-color .12s}
+  .cell.past{background:rgba(255,255,255,.015);border-style:solid;opacity:.3}
+  .cell.over{border-color:var(--cyan);border-style:solid;background:rgba(57,232,255,.08);box-shadow:inset 0 0 12px rgba(57,232,255,.15)}
+  .slotchip{position:absolute;inset:1px;border-radius:6px;display:flex;align-items:center;gap:5px;padding:0 6px;cursor:grab;line-height:1.15}
+  .slotchip .x{margin-left:auto;cursor:pointer;opacity:.7;font-size:12px;padding:0 2px}
+  .slotchip .x:hover{opacity:1}
+  .slotchip.booked{cursor:default;border:1px solid rgba(57,232,255,.4);background:rgba(57,232,255,.1);color:#bfefff}
+  .slotchip.planned{border:1px solid rgba(0,255,153,.45);background:rgba(0,255,153,.1);color:#8affc9}
+  .slotchip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+  .slotchip .ty2{font-family:'DM Mono',monospace;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;opacity:.8;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Schedule <span class="dim">/ queue</span></h1>
+      <div class="sub" id="sub">loading…</div>
+    </div>
+    <div class="filters" id="filters"></div>
+  </header>
+  <div class="banner" id="banner">Read-only mode. Start the live studio with <code>node tools/studio-server.mjs</code> in the studio folder — drag scheduling and one-click LinkedIn booking only work there.</div>
+  <div class="tabs">
+    <button class="tab on" id="tab-q">Queue</button>
+    <button class="tab" id="tab-w">Week planner</button>
+  </div>
+  <div id="view-q">
+    <div class="grid" id="grid"></div>
+  </div>
+  <div id="view-w" style="display:none">
+    <div class="tray" id="tray"></div>
+    <div class="week" id="week"></div>
+  </div>
+  <div class="note" id="note"></div>
+</div>
+<div class="bar"><div class="barin">
+  <span class="brand">Pietro<sup>.works</sup> — schedule</span>
+  <div class="info" id="barinfo">…</div>
+  <button class="ghost" id="refresh">Refresh queue</button>
+  <button class="ghost" id="saveplan" style="display:none">Save plan</button>
+  <button class="pub" id="pub" disabled>Publish selected</button>
+</div></div>
+<script>
+const PILL={unscheduled:['#8b99b3','rgba(139,153,179,.14)'],pending:['#f5b54a','rgba(245,181,74,.16)'],scheduled:['#39e8ff','rgba(57,232,255,.14)'],verified:['#34d399','rgba(52,211,153,.16)'],failed:['#f87171','rgba(248,113,113,.16)'],manual:['#c084fc','rgba(192,132,252,.16)']};
+const HOURS=[]; for(let h=8;h<=22;h++) HOURS.push(h);
+const sel=new Set(); let filter='all'; let view='q'; let LIVEMODE=false;
+let DATA={cards:[],upcoming:{},calendar:[],plan:[]};
+const placements=new Map();   // slotKey "y-m-d-h" -> asset_id
+const $=(id)=>document.getElementById(id);
+const byId=()=>new Map(DATA.cards.map(c=>[c.asset_id,c]));
+function pillLabel(c){if(c.manual_only)return 'Manual upload';return c.status==='unscheduled'?'Unscheduled':(c.status==='scheduled'||c.status==='verified')?((c.slot_local||'').replace(/ Europe\/Warsaw/,'').replace(/^\d{4}-/,'')):c.status==='pending'?'Booking…':'Failed';}
+function fmt(s){return (s||'').replace(/ Europe\/Warsaw/,'');}
+function keyOf(y,m,d,h){return y+'-'+m+'-'+d+'-'+h;}
+function dayList(){ const out=[]; const now=new Date();
+  for(let i=0;i<7;i++){ out.push(new Date(now.getFullYear(),now.getMonth(),now.getDate()+i)); } return out; }
+function slotDate(y,m,d,h){ return new Date(y,m-1,d,h,0,0); }
+function bookedMap(){ // slotKey -> live booking, using local wall time of slot_iso
+  const m=new Map(); const LIVE=new Set(['pending','scheduled','verified']);
+  for(const b of (DATA.calendar||[])){ if(!LIVE.has(b.status))continue; const t=new Date(b.slot_iso);
+    m.set(keyOf(t.getFullYear(),t.getMonth()+1,t.getDate(),t.getHours()),b); }
+  return m; }
+
+function draw(){
+  const types=[...new Set(DATA.cards.map(c=>c.type))];
+  const fc=$('filters'); fc.innerHTML='';
+  const mk=(id,label)=>{const b=document.createElement('button');b.className='chip'+(filter===id?' on':'');b.textContent=label;b.onclick=()=>{filter=id;draw();};return b;};
+  fc.appendChild(mk('all','All · '+DATA.cards.length));
+  for(const t of types){const n=DATA.cards.filter(c=>c.type===t).length;fc.appendChild(mk(t,t[0].toUpperCase()+t.slice(1)+' · '+n));}
+  const nx=(DATA.upcoming.news||[])[0];
+  $('sub').textContent=(LIVEMODE?'live · ':'static · ')+(nx?('next auto slot '+fmt(nx)):'no auto slots in window');
+  drawQueue(); drawWeek(); drawBar();
+}
+function drawQueue(){
+  const g=$('grid'); g.innerHTML='';
+  for(const c of DATA.cards){
+    if(filter!=='all'&&c.type!==filter)continue;
+    const d=document.createElement('div'); d.className='card'+(sel.has(c.asset_id)?' sel':'')+(c.manual_only?' manual':'')+(c.type==='article'||c.type==='fluxogram'?' wide':'')+(c.type==='fluxogram'?' flux':'');
+    const pc=c.manual_only?PILL.manual:(PILL[c.status]||PILL.unscheduled);
+    d.innerHTML=
+      '<div class="thumbwrap">'+(c.thumb_path?('<img alt="" src="'+c.thumb_path+'">'):'')+(c.manual_only?'':'<div class="check">'+(sel.has(c.asset_id)?'✓':'')+'</div>')+'</div>'+
+      '<div class="meta"><div class="row"><span class="kind">'+(c.kind==='document'?'◧ deck':c.type==='article'?'▭ cover':'▦ post')+' · '+c.type+'</span>'+
+      '<span class="pill" style="color:'+pc[0]+';background:'+pc[1]+'">'+pillLabel(c)+'</span></div>'+
+      '<div class="cap"></div><div class="date">'+c.date+'</div></div>';
+    d.querySelector('.cap').textContent=c.caption_preview;
+    d.onclick=c.manual_only?null:()=>{sel.has(c.asset_id)?sel.delete(c.asset_id):sel.add(c.asset_id);draw();};
+    g.appendChild(d);
+  }
+}
+function drawWeek(){
+  const tray=$('tray'); tray.innerHTML='';
+  const placed=new Set(placements.values());
+  for(const c of DATA.cards){
+    if(c.manual_only||c.status!=='unscheduled'||placed.has(c.asset_id))continue;
+    const t=document.createElement('div'); t.className='tchip'; t.draggable=LIVEMODE; t.dataset.id=c.asset_id;
+    t.innerHTML=(c.thumb_path?'<img alt="" src="'+c.thumb_path+'">':'')+'<div class="tt"><span class="ty">'+c.type+'</span></div>';
+    t.querySelector('.tt').appendChild(document.createTextNode(c.title||c.asset_id));
+    t.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',c.asset_id);t.classList.add('dragging');});
+    t.addEventListener('dragend',()=>t.classList.remove('dragging'));
+    tray.appendChild(t);
+  }
+  const wk=$('week'); wk.innerHTML='';
+  const days=dayList(); const booked=bookedMap(); const now=Date.now();
+  const dn=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  wk.appendChild(document.createElement('div'));
+  for(const d of days){ const h=document.createElement('div');
+    h.className='whead'+(d.toDateString()===new Date().toDateString()?' today':'');
+    h.innerHTML=dn[d.getDay()]+'<b>'+(d.getMonth()+1)+'/'+d.getDate()+'</b>'; wk.appendChild(h); }
+  const cardsById=byId();
+  for(const h of HOURS){
+    const lab=document.createElement('div'); lab.className='hlab'; lab.textContent=String(h).padStart(2,'0')+':00'; wk.appendChild(lab);
+    for(const d of days){
+      const y=d.getFullYear(),mo=d.getMonth()+1,dd=d.getDate();
+      const key=keyOf(y,mo,dd,h);
+      const cell=document.createElement('div'); cell.className='cell'; cell.dataset.key=key;
+      const past=slotDate(y,mo,dd,h).getTime() < now+30*60e3;
+      const bk=booked.get(key);
+      if(bk){
+        const s=document.createElement('div'); s.className='slotchip booked';
+        s.innerHTML='<span class="ty2">'+bk.type+'</span><span class="nm"></span>';
+        s.querySelector('.nm').textContent=bk.title||bk.asset_id; s.title=bk.asset_id+' · '+bk.status;
+        cell.appendChild(s);
+      } else if(placements.has(key)){
+        const id=placements.get(key); const c=cardsById.get(id);
+        const s=document.createElement('div'); s.className='slotchip planned'; s.draggable=true;
+        s.innerHTML='<span class="ty2">'+(c?c.type:'')+'</span><span class="nm"></span><span class="x" title="remove">✕</span>';
+        s.querySelector('.nm').textContent=c?(c.title||id):id;
+        s.querySelector('.x').onclick=(e)=>{e.stopPropagation();placements.delete(key);draw();};
+        s.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',id);placements.delete(key);});
+        s.addEventListener('dragend',()=>draw());
+        cell.appendChild(s);
+      } else if(past){ cell.classList.add('past'); }
+      if(LIVEMODE && !bk && !past){
+        cell.addEventListener('dragover',e=>{if(!placements.has(key)){e.preventDefault();cell.classList.add('over');}});
+        cell.addEventListener('dragleave',()=>cell.classList.remove('over'));
+        cell.addEventListener('drop',e=>{
+          e.preventDefault(); cell.classList.remove('over');
+          const id=e.dataTransfer.getData('text/plain'); if(!id||placements.has(key))return;
+          for(const [k,v] of placements) if(v===id) placements.delete(k);
+          placements.set(key,id); draw();
+        });
+      }
+      wk.appendChild(cell);
+    }
+  }
+}
+function drawBar(){
+  const pub=$('pub');
+  if(view==='q'){
+    $('saveplan').style.display='none';
+    const n=sel.size; $('barinfo').innerHTML=n?('<b>'+n+'</b> selected'):'0 selected';
+    pub.textContent='Publish selected'; pub.classList.remove('gr'); pub.disabled=!n;
+  } else {
+    $('saveplan').style.display=LIVEMODE?'':'none';
+    const n=placements.size; $('barinfo').innerHTML='<b>'+n+'</b> placed on the timeline';
+    pub.textContent='Schedule week ('+n+')'; pub.classList.add('gr'); pub.disabled=!LIVEMODE||!n;
+  }
+}
+function placementsPayload(){
+  return [...placements.entries()].map(([k,id])=>{const [y,m,d,h]=k.split('-').map(Number);return {asset_id:id,local:{y,m,d,h}};});
+}
+function note(msg,show=true){const n=$('note');n.textContent=msg;n.classList.toggle('show',show);if(show)n.scrollIntoView({behavior:'smooth',block:'nearest'});}
+async function api(path,body){
+  const r=await fetch(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'});
+  if(!r.ok){const t=await r.json().catch(()=>({error:r.status}));throw new Error(t.error||('HTTP '+r.status));}
+  return r.json();
+}
+function seedPlanFromServer(){
+  placements.clear();
+  for(const p of (DATA.plan||[])){ const t=new Date(p.slot_iso); if(isNaN(t))continue;
+    if(t.getTime()<Date.now())continue;
+    placements.set(keyOf(t.getFullYear(),t.getMonth()+1,t.getDate(),t.getHours()),p.asset_id); }
+}
+$('tab-q').onclick=()=>{view='q';$('tab-q').classList.add('on');$('tab-w').classList.remove('on');$('view-q').style.display='';$('view-w').style.display='none';drawBar();};
+$('tab-w').onclick=()=>{view='w';$('tab-w').classList.add('on');$('tab-q').classList.remove('on');$('view-w').style.display='';$('view-q').style.display='none';drawBar();};
+$('refresh').onclick=async()=>{
+  if(!LIVEMODE){note('Read-only: start tools/studio-server.mjs to refresh.');return;}
+  note('rescanning Drive…');
+  try{const r=await api('/api/refresh',{});DATA=r.data;seedPlanFromServer();draw();note('queue refreshed\n'+r.log);}catch(e){note('refresh failed: '+e.message);}
+};
+$('saveplan').onclick=async()=>{
+  try{const r=await api('/api/plan',{placements:placementsPayload()});
+    note('plan saved ('+r.saved+' placements)'+(r.rejected.length?('\nrejected:\n'+r.rejected.map(x=>'· '+x.asset_id+' — '+x.reason).join('\n')):''));}
+  catch(e){note('save failed: '+e.message);}
+};
+$('pub').onclick=async()=>{
+  if(view==='q'){
+    const ids=[...sel]; if(!ids.length)return;
+    window.__studioPublish={ids,at:Date.now()};
+    note('Ready to publish '+ids.length+' item(s). Tell Claude "publish" in chat and it will book the next free slots.\n'+ids.map(i=>'· '+i).join('\n'));
+    return;
+  }
+  if(!placements.size)return;
+  $('pub').disabled=true;
+  try{
+    const r=await api('/api/schedule',{placements:placementsPayload()});
+    note('scheduling '+r.planned+' item(s) on LinkedIn — a Chrome window opens; log in there if asked.'+(r.rejected.length?('\nrejected:\n'+r.rejected.map(x=>'· '+x.asset_id+' — '+x.reason).join('\n')):''));
+    const poll=setInterval(async()=>{
+      try{const s=await api('/api/run');
+        note((s.running?'running…\n':'finished (exit '+s.exitCode+')\n')+s.log);
+        if(!s.running){clearInterval(poll);placements.clear();DATA=await api('/api/data');seedPlanFromServer();draw();}
+      }catch(e){clearInterval(poll);note('lost server: '+e.message);}
+    },2000);
+  }catch(e){note('schedule failed: '+e.message);$('pub').disabled=false;}
+};
+(async()=>{
+  try{ DATA=await api('/api/data'); LIVEMODE=true; }
+  catch{ LIVEMODE=false; $('banner').classList.add('show');
+    try{ DATA=await (await fetch('db/dashboard.json',{cache:'no-store'})).json(); }
+    catch{ $('sub').textContent='Could not load db/dashboard.json — run dashboard-data.mjs'; return; } }
+  seedPlanFromServer(); draw();
+})();
+</script>
+<script>
+// floating back-to-Studio arrow — preview chrome only, never on the render path
+(function(){
+  if(new URLSearchParams(location.search).has('headless')||navigator.webdriver===true||/\bHeadless/.test(navigator.userAgent||''))return;
+  if(location.protocol!=='http:'&&location.protocol!=='https:')return;
+  var a=document.createElement('a');a.id='pw-back';a.href='/';a.title='Back to Studio';a.textContent='\u2190';
+  a.style.cssText="position:fixed;top:16px;left:16px;z-index:600;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font:500 17px/1 'DM Mono',monospace;color:#9fb0d0;text-decoration:none;background:rgba(6,10,19,.72);border:1px solid rgba(120,200,255,.3);border-radius:50%;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:.15s;";
+  a.onmouseenter=function(){a.style.color='#04121a';a.style.background='#39e8ff';a.style.borderColor='#39e8ff';};
+  a.onmouseleave=function(){a.style.color='#9fb0d0';a.style.background='rgba(6,10,19,.72)';a.style.borderColor='rgba(120,200,255,.3)';};
+  document.body.appendChild(a);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pietro Studio</title>
+<style>
+@font-face{font-family:'Clash Display';src:url('/renderer/fonts/clash-600.woff2') format('woff2');font-weight:600;font-display:swap;}
+@font-face{font-family:'Clash Display';src:url('/renderer/fonts/clash-700.woff2') format('woff2');font-weight:700;font-display:swap;}
+</style>
+<link rel="stylesheet" href="/renderer/fonts/dm.local.css">
+<style>
+  :root{--ink:#eef4ff;--muted:#9fb0d0;--dim:#6b7da0;--cyan:#39e8ff;--green:#00ff99;--purple:#a855f7;
+    --line:rgba(180,205,255,.14);--line2:rgba(120,200,255,.3);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{background:#04070d;color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;overflow:hidden;}
+  .photo{position:fixed;inset:0;pointer-events:none;z-index:-2;
+    background:url('/renderer/fluxogram-bg.jpg') 50% 32%/cover no-repeat;
+    opacity:.38;filter:saturate(.7) contrast(1.05) brightness(.9);}
+  .glow{position:fixed;inset:0;pointer-events:none;z-index:-1;background:
+    linear-gradient(180deg,rgba(4,7,13,.78) 0%,rgba(4,7,13,.42) 30%,rgba(4,7,13,.5) 65%,rgba(4,7,13,.88) 100%),
+    radial-gradient(ellipse 55% 45% at 18% 0%, rgba(57,232,255,.1), transparent 60%),
+    radial-gradient(ellipse 45% 40% at 88% 100%, rgba(168,85,247,.08), transparent 60%),
+    radial-gradient(120% 130% at 74% 40%, transparent 40%, rgba(4,7,13,.55) 100%);}
+  .frame{position:fixed;inset:16px;border:1px solid var(--line);border-radius:10px;pointer-events:none;}
+  .wrap{position:relative;max-width:1280px;height:100vh;margin:0 auto;display:flex;flex-direction:column;
+    padding:clamp(22px,4.5vh,44px) 44px clamp(18px,3.5vh,34px);}
+  header{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;
+    font-family:'DM Mono',monospace;font-size:14px;letter-spacing:.14em;}
+  .kick{display:inline-flex;align-items:center;gap:10px;color:#eaf3ff;border:1px solid var(--line2);
+    border-radius:100px;padding:8px 16px;text-transform:uppercase;background:rgba(6,10,18,.4);}
+  .kick .d{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);}
+  .spine{text-transform:uppercase;color:var(--muted);}
+  .spine b{font-weight:500;background:linear-gradient(105deg,var(--cyan),var(--green) 52%,var(--purple));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  h1{font-family:'Clash Display',sans-serif;font-weight:600;font-size:clamp(30px,5.4vh,50px);line-height:1.02;
+    margin:clamp(16px,3.6vh,36px) 0 8px;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.55);}
+  .sub{font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);letter-spacing:.04em;margin-bottom:clamp(14px,3.2vh,30px);text-shadow:0 1px 10px rgba(0,0,0,.7);}
+  .sub b{color:#bfefff;font-weight:500;}
+  .grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:clamp(10px,1.8vh,16px);}
+  a.card{display:flex;flex-direction:column;text-decoration:none;color:var(--ink);position:relative;min-height:0;
+    background:rgba(10,17,32,.74);border:1px solid var(--line);border-radius:16px;
+    padding:clamp(12px,2.2vh,20px) 22px clamp(10px,1.8vh,16px);backdrop-filter:blur(4px) saturate(1.05);
+    transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;}
+  a.card:hover{transform:translateY(-3px);border-color:var(--line2);box-shadow:0 24px 60px -30px rgba(0,0,0,.9);}
+  a.card.hero{border:1.5px solid transparent;background:
+    linear-gradient(rgba(14,24,44,.92),rgba(14,24,44,.92)) padding-box,
+    linear-gradient(150deg,var(--cyan),var(--green) 50%,var(--purple)) border-box;
+    box-shadow:0 0 0 1px rgba(0,255,153,.06),0 26px 70px -28px rgba(0,180,140,.35);}
+  a.card.off{opacity:.5;pointer-events:none;}
+  .num{font-family:'DM Mono',monospace;font-size:13px;color:var(--dim);letter-spacing:.06em;}
+  .glyph{width:clamp(28px,4.4vh,40px);height:clamp(28px,4.4vh,40px);margin:clamp(5px,1.2vh,10px) 0 clamp(6px,1.4vh,12px);color:var(--cyan);filter:drop-shadow(0 0 14px rgba(57,232,255,.35));}
+  .hero .glyph{color:#fff;filter:drop-shadow(0 0 16px rgba(0,255,153,.5));}
+  .glyph svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+  .name{font-family:'Clash Display',sans-serif;font-weight:600;font-size:clamp(19px,2.9vh,25px);line-height:1;color:#fff;}
+  .desc{margin-top:clamp(6px,1.3vh,11px);font-family:'DM Mono',monospace;font-size:clamp(10.5px,1.5vh,12.5px);line-height:1.5;color:#a9b8d4;}
+  .desc .hi{color:#bfefff;}
+  .desc .hg{color:#8affc9;}
+  .chip{margin-top:auto;padding-top:clamp(6px,1.4vh,12px);font-family:'DM Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chip b{color:#8affc9;font-weight:500;}
+  .hero .chip b{background:linear-gradient(105deg,var(--cyan),var(--green) 55%,var(--purple));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .arrow{position:absolute;top:22px;right:22px;font-family:'DM Mono',monospace;font-size:16px;color:var(--dim);transition:color .16s;}
+  a.card:hover .arrow{color:var(--cyan);}
+  footer{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:clamp(12px,2.6vh,24px);
+    font-family:'DM Mono',monospace;font-size:12.5px;letter-spacing:.05em;color:#8194b5;text-shadow:0 1px 10px rgba(0,0,0,.7);}
+  footer .value{color:#eaf3ff;}
+  footer .value b{font-weight:500;background:linear-gradient(105deg,var(--cyan),var(--green) 52%,var(--purple));
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  @media (max-width:1000px){ body{overflow:auto;} .wrap{height:auto;min-height:100vh;}
+    .grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));grid-auto-rows:auto;} a.card{min-height:170px;} }
+</style>
+</head>
+<body>
+<div class="photo"></div><div class="glow"></div><div class="frame"></div>
+<div class="wrap">
+  <header>
+    <span class="kick"><span class="d"></span>Pietro.works — Studio</span>
+    <span class="spine">generate · <b>gate</b> · ship</span>
+  </header>
+  <h1>Control Room</h1>
+  <div class="sub" id="sub">every module of the pipeline, <b>one door</b></div>
+  <div class="grid">
+    <a class="card hero" href="/dashboard.html">
+      <span class="num">01</span><span class="arrow">→</span>
+      <div class="glyph"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><path d="m9.5 15 2 2 3.5-3.5"/></svg></div>
+      <div class="name">Schedule</div>
+      <div class="desc">queue · drag week planner<br><span class="hg">books LinkedIn natively</span></div>
+      <div class="chip" id="chip-sched">open the calendar</div>
+    </a>
+    <a class="card" href="/renderer/fluxogram.html">
+      <span class="num">02</span><span class="arrow">→</span>
+      <div class="glyph"><svg viewBox="0 0 24 24"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></div>
+      <div class="name">Fluxogram</div>
+      <div class="desc">on-canvas editor<br><span class="hi">click anything to edit</span></div>
+      <div class="chip" id="chip-fluxogram">6-card flow diagrams</div>
+    </a>
+    <a class="card" href="/renderer/news.html">
+      <span class="num">03</span><span class="arrow">→</span>
+      <div class="glyph"><svg viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div>
+      <div class="name">News</div>
+      <div class="desc">daily feed modules<br>two variations, gated</div>
+      <div class="chip" id="chip-news">template preview</div>
+    </a>
+    <a class="card" href="/renderer/slides.html">
+      <span class="num">04</span><span class="arrow">→</span>
+      <div class="glyph"><svg viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg></div>
+      <div class="name">Slides</div>
+      <div class="desc">carousel decks<br>pdf + cover, fit-measured</div>
+      <div class="chip" id="chip-slides">template preview</div>
+    </a>
+    <a class="card" href="/renderer/article.html">
+      <span class="num">05</span><span class="arrow">→</span>
+      <div class="glyph"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M4 17l4.5-4.5 3.5 3.5 3-3 5 5"/></svg></div>
+      <div class="name">Article</div>
+      <div class="desc">long-form covers<br>1920×1080, two banners</div>
+      <div class="chip" id="chip-article">template preview</div>
+    </a>
+    <a class="card" href="/renderer/tutorial.html">
+      <span class="num">06</span><span class="arrow">→</span>
+      <div class="glyph"><svg viewBox="0 0 24 24"><path d="m3 7 2 2 4-4"/><path d="m3 17 2 2 4-4"/><line x1="13" y1="6" x2="21" y2="6"/><line x1="13" y1="12" x2="21" y2="12"/><line x1="13" y1="18" x2="21" y2="18"/></svg></div>
+      <div class="name">Tutorial</div>
+      <div class="desc">step-by-step cards<br>2160 square, spec-driven</div>
+      <div class="chip" id="chip-tutorial">open the template</div>
+    </a>
+  </div>
+  <footer>
+    <span>one queue · one calendar · one gate</span>
+    <span class="value" id="foot">nothing ships that <b>fails a check</b></span>
+  </footer>
+</div>
+<script>
+fetch('/api/data',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+  const un=d.cards.filter(c=>c.status==='unscheduled'&&!c.manual_only).length;
+  const per=t=>d.cards.filter(c=>c.type===t).length;
+  const nx=(d.upcoming&&d.upcoming.news||[])[0];
+  document.getElementById('chip-sched').innerHTML='<b>'+un+'</b> unscheduled'+(nx?(' · next auto '+nx.replace(/ Europe\/Warsaw/,'')):'');
+  for(const t of ['fluxogram','news','slides','article','tutorial']){
+    const n=per(t); if(n)document.getElementById('chip-'+t).innerHTML='<b>'+n+'</b> in queue';
+  }
+  document.getElementById('sub').innerHTML='server live · '+d.cards.length+' assets indexed · <b>one door</b>';
+}).catch(()=>{ document.getElementById('sub').textContent='static mode — double-click Studio.command for the live server'; });
+</script>
+</body>
+</html>
