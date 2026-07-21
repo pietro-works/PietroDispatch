@@ -48,6 +48,7 @@ const exists = async (p) => { try { await stat(p); return true; } catch { return
 async function detectType(folder) {
   const names = await readdir(folder);
   if (names.includes('spec.json') && names.includes('fluxogram.png')) return 'fluxo';
+  if (names.includes('tutorial.png')) return 'tutorial';   // PACS0001 — tutorial folder marker
   if (names.includes('slides.pdf')) return 'slides';
   if (names.some((n) => /^banner-[12]\.png$/.test(n))) return 'article';
   if (names.some((n) => /^post-[12]\.png$/.test(n))) return 'news';

@@ -218,13 +218,13 @@
   input[type=number].q-num-input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
   .ctrl-btn{
     display:inline-flex; align-items:center; gap:8px;
-    border:1px solid var(--line-s); background:rgba(120,160,230,.08);
-    color:var(--ink); border-radius:999px; padding:9px 17px; font-size:13px; cursor:pointer;
-    font-family:inherit; transition:background .2s;
+    font-family:'DM Mono',monospace; font-size:12px; letter-spacing:.04em; font-weight:500;
+    border:1px solid rgba(120,200,255,.3); background:transparent;
+    color:#9fb0d0; border-radius:10px; padding:10px 16px; cursor:pointer; transition:.12s;
   }
-  .ctrl-btn:hover{background:rgba(120,160,230,.18);}
-  .ctrl-btn.primary{background:var(--cyan); color:#04121a; border-color:var(--cyan); font-weight:600;}
-  .ctrl-btn.primary:hover{background:#5fefff;}
+  .ctrl-btn:hover{color:#eef4ff;border-color:var(--cyan);}
+  .ctrl-btn.primary{background:linear-gradient(105deg,var(--cyan),#5fefff); color:#04121a; border:none; font-weight:600;}
+  .ctrl-btn.primary:hover{filter:brightness(1.1); color:#04121a;}
   .ctrl-btn.nav{padding:9px 14px; font-size:16px; line-height:1;}
   .ctrl-btn.hl-btn{border-color:rgba(57,232,255,.36); background:rgba(57,232,255,.08); padding:9px 18px;}
   .ctrl-btn.hl-btn:hover{background:rgba(57,232,255,.16);}
@@ -237,16 +237,25 @@
   /* ── glassmorphic dock ── */
   .dock{
     position:fixed; bottom:0; left:0; right:0; z-index:200;
-    padding:14px 32px 28px;
-    display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px;
-    background:rgba(10,15,28,.72);
-    -webkit-backdrop-filter:blur(24px) saturate(1.4); backdrop-filter:blur(24px) saturate(1.4);
-    border-top:1px solid rgba(150,180,240,.2);
-    box-shadow:0 -2px 32px rgba(0,0,0,.4), inset 0 1px rgba(255,255,255,.1);
-    transform:translateY(100%);
-    transition:transform .44s cubic-bezier(.22,1,.36,1);
+    padding:20px 26px 14px;
+    display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px;
+    background:rgba(6,10,19,.9);
+    -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+    border-top:1px solid rgba(180,205,255,.14);
+    transform:translateY(calc(100% - 14px));
+    transition:transform .3s ease;
   }
-  .dock.open{transform:translateY(0);}
+  .dock::before{content:'';position:absolute;top:5px;left:50%;transform:translateX(-50%);width:44px;height:3px;border-radius:2px;background:rgba(159,176,208,.4);}
+  .dock .pw-brand{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#fff;white-space:nowrap;pointer-events:none;margin-right:auto;}
+  .dock .pw-brand sup{color:var(--cyan);font-size:.6em;text-transform:none;}
+  /* compact single-row controls, same header shape as the fluxogram/slides bars */
+  .dock .ctrl-group{padding:4px 10px;gap:7px;}
+  .dock .ctrl-group label{font-size:10px;}
+  .dock .meta{font-size:11px;}
+  .dock input[type=range]{width:78px;}
+  .dock .ctrl-btn{padding:8px 12px;font-size:11px;gap:6px;}
+  .dock .ctrl-btn.nav{padding:8px 10px;font-size:13px;}
+  .dock.open,.dock:hover{transform:translateY(0);}
 </style>
 <script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
 </head>
@@ -287,6 +296,7 @@
   </div>
 
   <div class="dock" id="dock">
+    <span class="pw-brand">Pietro<sup>.works</sup> — article covers</span>
     <div class="ctrl-group">
       <button class="ctrl-btn nav" id="prevBtn" title="Previous">&#9664;</button>
       <input type="number" class="q-num-input" id="numInput" min="1" max="8" value="1"/>
@@ -726,5 +736,17 @@
     document.getElementById('date').textContent = currentYearLabel();
     loadTSV();
   </script>
+<script>
+// floating back-to-Studio arrow — preview chrome only, never on the render path
+(function(){
+  if(new URLSearchParams(location.search).has('headless')||navigator.webdriver===true||/\bHeadless/.test(navigator.userAgent||''))return;
+  if(location.protocol!=='http:'&&location.protocol!=='https:')return;
+  var a=document.createElement('a');a.id='pw-back';a.href='/';a.title='Back to Studio';a.textContent='\u2190';
+  a.style.cssText="position:fixed;top:16px;left:16px;z-index:600;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font:500 17px/1 'DM Mono',monospace;color:#9fb0d0;text-decoration:none;background:rgba(6,10,19,.72);border:1px solid rgba(120,200,255,.3);border-radius:50%;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:.15s;";
+  a.onmouseenter=function(){a.style.color='#04121a';a.style.background='#39e8ff';a.style.borderColor='#39e8ff';};
+  a.onmouseleave=function(){a.style.color='#9fb0d0';a.style.background='rgba(6,10,19,.72)';a.style.borderColor='rgba(120,200,255,.3)';};
+  document.body.appendChild(a);
+})();
+</script>
 </body>
 </html>

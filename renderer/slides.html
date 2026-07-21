@@ -65,6 +65,55 @@
   .s-contact .role{font-size:19px;color:var(--muted);margin-top:4px;letter-spacing:.04em;}
   .s-contact .cta{font-size:22px;color:#eaf2ff;margin-top:16px;}
 </style>
+<style id="sed-style">
+  /* ---- slides on-canvas editor (never built on the headless render path) ---- */
+  body.sed-on{overflow:hidden;display:flex;align-items:center;justify-content:center;height:100vh;
+    background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(20,30,60,.5),transparent 60%),linear-gradient(160deg,#05080f,#070b16 60%,#060a12);}
+  body.sed-on .stage-wrap{display:none;}
+  #sed-grid{display:grid;grid-template-columns:repeat(2,auto);justify-content:center;align-content:center;}
+  .sed-cell{position:relative;overflow:hidden;border-radius:6px;box-shadow:0 24px 70px -30px rgba(0,0,0,.9);}
+  .sed-slide{position:absolute;top:0;left:0;transform-origin:top left;}
+  #sed-grid .sed-editing{outline:1.5px dashed rgba(57,232,255,.85);outline-offset:3px;cursor:text;}
+  #sed-grid .sed-over{outline:1.5px dashed rgba(248,113,113,.9);outline-offset:2px;}
+  body.sed-on .s-title,body.sed-on .s-stext,body.sed-on .s-glyphs .g,body.sed-on .s-glyphs .gl,
+  body.sed-on .s-head .topic,body.sed-on .s-contact .nm,body.sed-on .s-contact .role,body.sed-on .s-contact .cta,
+  body.sed-on .sed-slide{cursor:pointer;}
+  #sed-pop{position:fixed;z-index:300;left:20px;bottom:34px;min-width:230px;max-width:340px;background:rgba(8,13,26,.96);
+    border:1px solid rgba(120,200,255,.3);border-radius:12px;padding:12px 13px;box-shadow:0 20px 60px -18px rgba(0,0,0,.85);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-family:'DM Mono',monospace;font-size:11px;color:#9fb0d0;display:none;}
+  #sed-pop.open{display:block;}
+  #sed-pop h4{font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin:0 0 4px;display:flex;justify-content:space-between;align-items:center;gap:14px;}
+  #sed-pop h4 .x{cursor:pointer;color:#6b7da0;font-size:12px;}
+  #sed-pop h4 .x:hover{color:#fff;}
+  .sedp-row{display:flex;align-items:center;gap:7px;margin-top:8px;flex-wrap:wrap;}
+  .sedp-lab{min-width:66px;color:#6b7da0;letter-spacing:.04em;}
+  .sedp-chip{width:24px;height:24px;border-radius:6px;border:1px solid rgba(180,205,255,.3);cursor:pointer;padding:0;
+    background:linear-gradient(150deg,#0b1426,#070c17);color:#9fb0d0;font-family:'DM Mono',monospace;font-size:10px;}
+  .sedp-chip.sel{outline:2px solid var(--cyan);outline-offset:1px;color:#fff;}
+  .sedp-btn{font-family:'DM Mono',monospace;font-size:11px;color:#eef4ff;background:rgba(120,160,230,.1);
+    border:1px solid rgba(120,160,230,.3);border-radius:7px;padding:5px 9px;cursor:pointer;}
+  .sedp-btn:hover{border-color:var(--cyan);}
+  #sed-pop input[type=text]{flex:1;font-family:'DM Mono',monospace;font-size:11px;color:#eef4ff;background:rgba(6,10,18,.8);
+    border:1px solid rgba(120,160,230,.25);border-radius:7px;padding:5px 8px;outline:none;min-width:130px;}
+  #sed-pop input[type=text]:focus{border-color:var(--cyan);}
+  .sedp-hint{margin-top:8px;font-size:10px;color:#6b7da0;line-height:1.5;}
+  /* bottom bar — same system as the Studio schedule bar */
+  #sed-bar{position:fixed;left:0;right:0;bottom:0;z-index:250;display:flex;align-items:center;gap:10px;
+    padding:20px 26px 14px;background:rgba(6,10,19,.9);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    border-top:1px solid rgba(180,205,255,.14);transform:translateY(calc(100% - 14px));transition:transform .25s ease;}
+  #sed-bar:hover,#sed-bar:focus-within{transform:translateY(0);}
+  #sed-bar::before{content:'';position:absolute;top:5px;left:50%;transform:translateX(-50%);width:44px;height:3px;border-radius:2px;background:rgba(159,176,208,.4);}
+  #sed-bar .brand{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#fff;margin-right:auto;white-space:nowrap;}
+  #sed-bar .brand sup{color:var(--cyan);font-size:.6em;text-transform:none;}
+  .sed-btn{display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.04em;font-weight:500;
+    border:1px solid rgba(120,200,255,.3);background:transparent;color:#9fb0d0;border-radius:10px;
+    padding:10px 16px;cursor:pointer;transition:.12s;white-space:nowrap;}
+  .sed-btn:hover{color:#eef4ff;border-color:var(--cyan);}
+  .sed-btn.primary{background:linear-gradient(105deg,var(--cyan),#5fefff);color:#04121a;border:none;font-weight:600;}
+  .sed-btn.primary:hover{filter:brightness(1.1);color:#04121a;}
+  #sed-toast{position:fixed;left:50%;top:20px;transform:translateX(-50%) translateY(-8px);z-index:500;font-family:'DM Mono',monospace;font-size:12px;color:#eaf3ff;background:rgba(10,17,32,.94);border:1px solid rgba(120,200,255,.3);border-radius:10px;padding:9px 15px;opacity:0;pointer-events:none;transition:.25s;}
+  #sed-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
 </head>
 <body>
 <div class="stage-wrap"><div class="stage" id="stage"><div class="slide" id="slide"></div></div></div>
@@ -79,8 +128,8 @@ function withHL(t,hl){if(!hl)return esc(t);return esc(t).replace(esc(hl),'<span 
 
 // renderSlide(slide, topic): the headless driver (slides.mjs) calls this per slide.
 // slide.bg = image url/dataURL (A/B/contact). slide.bgTop / slide.bgBot for C. Missing => placeholder.
-function renderSlide(s, topic){
-  const el=document.getElementById('slide'); let h='';
+function renderSlideInto(el, s, topic){
+  let h='';
   if(s.type==='C'){
     h+='<div class="s-grad"></div>';
     h+='<div class="s-half top" style="background-image:'+bgVal(s.bgTop!=null?s.bgTop:s.bg)+'"></div>';
@@ -111,6 +160,7 @@ function renderSlide(s, topic){
   }
   el.innerHTML=h;
 }
+function renderSlide(s, topic){ renderSlideInto(document.getElementById('slide'), s, topic); }
 window.renderSlide=renderSlide;
 
 // count the distinct visual line-boxes a set of nodes occupies, via Range.getClientRects()
@@ -197,6 +247,273 @@ const SAMPLE={topic:'IN_THE_LOOP.MD',slides:[
   const cp=(location.search.match(/[?&]card=(\d+)/)||[])[1];
   const n=cp!=null?Math.max(0,Math.min(deck.slides.length-1,parseInt(cp,10))):0;
   renderSlide(deck.slides[n], deck.topic);
+})();
+</script>
+<script>
+/* ============================================================================
+   Slides on-canvas editor. No-op on the headless render path (?headless,
+   webdriver, HeadlessChrome) — slides.mjs drives renderSlide/#slide untouched.
+   Editor mode lays the four deck slides out 2x2 (1-2 top, 3-4 bottom), text is
+   edited by clicking it, glyphs cycle on click, the slide popup handles
+   backgrounds and the gradient accent, and the bottom bar matches the Studio
+   schedule bar (full-width, slide-up on hover).
+   ========================================================================== */
+(function(){
+  var params=new URLSearchParams(location.search);
+  var HEADLESS=params.has('headless')||navigator.webdriver===true||/\bHeadless/.test(navigator.userAgent||'');
+  if(HEADLESS)return;
+  if(params.has('card'))return;   // explicit single-card preview keeps the old behaviour
+
+  var clone=function(o){return JSON.parse(JSON.stringify(o));};
+  var GLYPHS=['○','◆','◎','●','◇','□','■','▲','△','✦','⚙','◉'];
+  var D=null;   // deck state
+
+  // ---- shell -----------------------------------------------------------------
+  document.body.classList.add('sed-on');
+  var grid=document.createElement('div');grid.id='sed-grid';document.body.appendChild(grid);
+  var cells=[];
+  function buildCells(n){
+    grid.innerHTML='';cells=[];
+    for(var i=0;i<n;i++){
+      var cell=document.createElement('div');cell.className='sed-cell';
+      var sl=document.createElement('div');sl.className='slide sed-slide';sl.dataset.i=i;
+      cell.appendChild(sl);grid.appendChild(cell);cells.push({cell:cell,slide:sl});
+    }
+  }
+  function fit(){
+    var n=cells.length||4;
+    var cols=2,rows=Math.ceil(n/2);
+    var barPeek=18,gap=14;
+    var k=Math.min((innerWidth-2*24-(cols-1)*gap)/(cols*1080),(innerHeight-2*20-barPeek-(rows-1)*gap)/(rows*1080));
+    if(!(k>0)||!isFinite(k))k=.3;
+    cells.forEach(function(c){
+      c.cell.style.width=(1080*k)+'px';c.cell.style.height=(1080*k)+'px';
+      c.slide.style.transform='scale('+k+')';
+    });
+    grid.style.gap=gap+'px';
+  }
+  addEventListener('resize',fit);
+
+  function render(i){
+    if(i==null){D.slides.forEach(function(s,ix){renderSlideInto(cells[ix].slide,s,D.topic);});}
+    else renderSlideInto(cells[i].slide,D.slides[i],D.topic);
+    fitHints();
+  }
+  // per-slide fit hints (same rule as measureFit: accent <=2 lines, title <=2, no stray word)
+  function fitHints(){
+    var bad=false;
+    cells.forEach(function(c,ix){
+      c.slide.querySelectorAll('.sed-over').forEach(function(n){n.classList.remove('sed-over');});
+      var grads=[...c.slide.querySelectorAll('.grad')];
+      if(grads.length&&lineBoxTops(grads,new Set()).size>2){grads.forEach(function(g){g.parentElement.classList.add('sed-over');});bad=true;}
+      c.slide.querySelectorAll('.s-title').forEach(function(t){
+        var parts=[...t.childNodes].filter(function(n){return !(n.nodeType===1&&n.classList&&n.classList.contains('s-kick'));});
+        if(lineBoxTops(parts,new Set()).size>2||strayWordLines(t,'.s-kick')>0){t.classList.add('sed-over');bad=true;}
+      });
+      c.slide.querySelectorAll('.s-step').forEach(function(st){ if(strayWordLines(st,'.s-num')>0){st.classList.add('sed-over');bad=true;} });
+    });
+    if(bad&&!fitHints._w){fitHints._w=true;toast('red dashes = accent/title past 2 lines or a stranded word');}
+  }
+
+  // ---- text helpers ----------------------------------------------------------
+  function linesOf(el,skipSel){
+    var out=[''];
+    (function walk(n){
+      for(var i=0;i<n.childNodes.length;i++){var c=n.childNodes[i];
+        if(c.nodeType===3)out[out.length-1]+=c.nodeValue;
+        else if(c.tagName==='BR')out.push('');
+        else if(!(skipSel&&c.matches&&c.matches(skipSel)))walk(c);}
+    })(el);
+    return out.map(function(t){return t.replace(/\s+/g,' ').trim();}).filter(function(t,ix,a){return !(t===''&&ix===a.length-1);});
+  }
+  function keepHl(s,fields){
+    if(!s.hl)return;
+    var joined=fields.join('\n');
+    if(joined.indexOf(s.hl)<0){s.hl='';toast('accent cleared — reset it in the slide popup');}
+  }
+
+  // ---- inline editing --------------------------------------------------------
+  var editing=null;
+  function commitEdit(){
+    if(!editing)return;
+    var el=editing.el,b=editing.bind;editing=null;
+    el.classList.remove('sed-editing');el.removeAttribute('contenteditable');
+    var s=D.slides[b.i];
+    if(b.k==='topic'){D.topic=el.textContent.trim();render();return;}
+    if(b.k==='title'){
+      var L=linesOf(el);
+      if(s.type==='A'){s.title=[L[0]||'',L.slice(1).join(' ')||''];keepHl(s,s.title);}
+      else if(s.type==='B'){s.hero=[L[0]||'',L.slice(1).join(' ')||''];keepHl(s,s.hero);}
+      else if(s.type==='contact'){s.line=[L[0]||'',L.slice(1).join(' ')||''];keepHl(s,s.line);}
+      else if(s.type==='C'){
+        var v=linesOf(el,'.s-kick').join('\n');
+        if(b.which==='before')s.before=v;else{s.after=v;keepHl(s,[s.after]);}
+      }
+    }
+    else if(b.k==='step'){s.steps[b.j]=el.textContent.trim();}
+    else if(b.k==='glabel'){s.glabel=el.textContent.trim();}
+    else if(b.k==='nm'){s.name=el.textContent.trim();}
+    else if(b.k==='role'){s.role=el.textContent.trim();}
+    else if(b.k==='cta'){s.cta=el.textContent.trim();}
+    render(b.i);
+  }
+  function cancelEdit(){if(!editing)return;var i=editing.bind.i;editing=null;render(i);}
+  function startEdit(el,bind,ev){
+    commitEdit();closePop();
+    editing={el:el,bind:bind};
+    el.setAttribute('contenteditable','true');el.classList.add('sed-editing');el.focus();
+    try{var r=document.caretRangeFromPoint(ev.clientX,ev.clientY);
+      if(r){var sl=getSelection();sl.removeAllRanges();sl.addRange(r);}}catch(e){}
+    el.addEventListener('blur',function onb(){el.removeEventListener('blur',onb);commitEdit();});
+    el.addEventListener('keydown',function(e){
+      if(e.key==='Enter'&&bind.k!=='title'){e.preventDefault();el.blur();}
+      if(e.key==='Escape'){e.preventDefault();cancelEdit();}
+    });
+  }
+
+  // ---- click routing ---------------------------------------------------------
+  grid.addEventListener('click',function(e){
+    if(editing&&editing.el.contains(e.target))return;
+    if(editing)commitEdit();
+    var slideEl=e.target.closest('.sed-slide');if(!slideEl)return;
+    var i=Number(slideEl.dataset.i),s=D.slides[i],t=e.target;
+    var g=t.closest('.s-glyphs .g');
+    if(g){var gi=[...slideEl.querySelectorAll('.s-glyphs .g')].indexOf(g);
+      s.glyphs[gi]=GLYPHS[(GLYPHS.indexOf(s.glyphs[gi])+1)%GLYPHS.length];render(i);return;}
+    var gl=t.closest('.s-glyphs .gl'); if(gl){startEdit(gl,{k:'glabel',i:i},e);return;}
+    var tp=t.closest('.s-head .topic'); if(tp){startEdit(tp,{k:'topic',i:i},e);return;}
+    var nm=t.closest('.s-contact .nm'); if(nm){startEdit(nm,{k:'nm',i:i},e);return;}
+    var ro=t.closest('.s-contact .role'); if(ro){startEdit(ro,{k:'role',i:i},e);return;}
+    var ct=t.closest('.s-contact .cta'); if(ct){startEdit(ct,{k:'cta',i:i},e);return;}
+    var st=t.closest('.s-stext'); if(st){var j=[...slideEl.querySelectorAll('.s-stext')].indexOf(st);startEdit(st,{k:'step',i:i,j:j},e);return;}
+    var ti=t.closest('.s-title');
+    if(ti){var bind={k:'title',i:i};
+      if(s.type==='C'){var kick=ti.querySelector('.s-kick');bind.which=(kick&&/BEFORE/i.test(kick.textContent))?'before':'after';}
+      startEdit(ti,bind,e);return;}
+    popSlide(i,e);
+  });
+
+  // ---- popup (docked bottom-left, above the bar peek) ------------------------
+  var pop=document.createElement('div');pop.id='sed-pop';document.body.appendChild(pop);
+  function closePop(){pop.classList.remove('open');pop.innerHTML='';}
+  function openPop(title){
+    pop.innerHTML='';pop.classList.add('open');
+    var h=document.createElement('h4');h.innerHTML='<span>'+title+'</span>';
+    var x=document.createElement('span');x.className='x';x.textContent='✕';x.onclick=closePop;h.appendChild(x);
+    pop.appendChild(h);
+  }
+  function row(label){var r=document.createElement('div');r.className='sedp-row';
+    if(label){var l=document.createElement('span');l.className='sedp-lab';l.textContent=label;r.appendChild(l);}
+    pop.appendChild(r);return r;}
+  function bgRow(label,get,set,i){
+    var r=row(label);
+    for(var pIx=0;pIx<4;pIx++)(function(px){
+      var b=document.createElement('button');b.type='button';b.className='sedp-chip';b.textContent=px+1;
+      b.title='brand placeholder '+(px+1);
+      if(get()===px)b.classList.add('sel');
+      b.onclick=function(){set(px);render(i);popSlide(i);};
+      r.appendChild(b);
+    })(pIx);
+    var fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.style.display='none';
+    fi.onchange=function(ev){var f=ev.target.files&&ev.target.files[0];fi.value='';if(!f)return;
+      var rd=new FileReader();rd.onload=function(){set(rd.result);render(i);toast('image set — exports inline; swap for a backgrounds/ path before the pipeline run');};rd.readAsDataURL(f);};
+    r.appendChild(fi);
+    var cb=document.createElement('button');cb.type='button';cb.className='sedp-btn';cb.textContent='image…';
+    cb.onclick=function(){fi.click();};r.appendChild(cb);
+  }
+  function popSlide(i,e){
+    var s=D.slides[i];
+    openPop('slide '+(i+1)+' · type '+s.type);
+    if(s.type==='C'){
+      bgRow('bg top',function(){return typeof s.bgTop==='number'?s.bgTop:-1;},function(v){s.bgTop=v;},i);
+      bgRow('bg bottom',function(){return typeof s.bgBot==='number'?s.bgBot:-1;},function(v){s.bgBot=v;},i);
+    } else {
+      bgRow('background',function(){return typeof s.bg==='number'?s.bg:-1;},function(v){s.bg=v;},i);
+    }
+    var r=row('accent');
+    var inp=document.createElement('input');inp.type='text';inp.value=s.hl||'';inp.spellcheck=false;
+    inp.placeholder='exact phrase to paint with the gradient';
+    inp.oninput=function(){s.hl=inp.value;render(i);};
+    r.appendChild(inp);
+    var hint=document.createElement('div');hint.className='sedp-hint';
+    hint.textContent='must match text on the slide exactly · click any text on the canvas to edit it';
+    pop.appendChild(hint);
+  }
+  document.addEventListener('mousedown',function(e){
+    if(pop.contains(e.target)||grid.contains(e.target)||bar.contains(e.target))return;
+    closePop();
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closePop();});
+
+  // ---- bottom bar (uniform with the Studio schedule bar) ---------------------
+  var bar=document.createElement('div');bar.id='sed-bar';
+  var brand=document.createElement('span');brand.className='brand';brand.innerHTML='Pietro<sup>.works</sup> — slides editor';bar.appendChild(brand);
+  var loadInput=document.createElement('input');loadInput.type='file';loadInput.accept='application/json,.json';loadInput.style.display='none';
+  loadInput.addEventListener('change',function(e){
+    var f=e.target.files&&e.target.files[0];loadInput.value='';if(!f)return;
+    var r=new FileReader();
+    r.onload=function(){try{
+      var d=JSON.parse(r.result);
+      if(!d||!Array.isArray(d.slides)||!d.slides.length)throw new Error('no slides[] in file');
+      D=d;buildCells(D.slides.length);fit();render();toast('loaded '+f.name);
+    }catch(err){toast('could not read deck: '+err.message);}};
+    r.readAsText(f);
+  });
+  bar.appendChild(loadInput);
+  function bbtn(label,fn,cls){var b=document.createElement('button');b.type='button';b.className='sed-btn'+(cls?' '+cls:'');b.textContent=label;b.onclick=fn;return b;}
+  bar.appendChild(bbtn('Load .json',function(){loadInput.click();}));
+  bar.appendChild(bbtn('Copy JSON',copyJson,'primary'));
+  bar.appendChild(bbtn('Download .json',downloadJson));
+  bar.appendChild(bbtn('Render → posts',function(){
+    toast('rendering deck to dispatch-posts…');
+    fetch('/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'slides',spec:D})})
+      .then(function(r){return r.json();}).then(function(d){toast(d.ok?('wrote '+d.files.join(' + ')):('render failed: '+(d.error||d.log||'').slice(-160)));})
+      .catch(function(){toast('needs the Studio server — open via Studio.command');});
+  }));
+  bar.appendChild(bbtn('Reset',function(){D=clone(window.__deck||SAMPLE);buildCells(D.slides.length);fit();render();closePop();toast('reset to the loaded deck');}));
+  document.body.appendChild(bar);
+
+  var toastEl=document.createElement('div');toastEl.id='sed-toast';document.body.appendChild(toastEl);
+  function toast(m){toastEl.textContent=m;toastEl.classList.add('show');
+    clearTimeout(toastEl._t);toastEl._t=setTimeout(function(){toastEl.classList.remove('show');},2200);}
+
+  function deckJson(){return JSON.stringify(D,null,2);}
+  function copyJson(){
+    var t=deckJson();
+    if(navigator.clipboard&&navigator.clipboard.writeText)
+      navigator.clipboard.writeText(t).then(function(){toast('deck JSON copied');},function(){toast('copy failed — use Download .json');});
+    else toast('copy failed — use Download .json');
+  }
+  function downloadJson(){
+    var b=new Blob([deckJson()],{type:'application/json'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='slides.json';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href);},4000);toast('slides.json downloaded');
+  }
+
+  // ---- boot ------------------------------------------------------------------
+  (async function(){
+    var deck=SAMPLE;
+    try{var r=await fetch('slides.json');if(r.ok)deck=await r.json();}catch(e){}
+    window.__deck=deck;
+    D=clone(deck);
+    buildCells(D.slides.length);fit();render();
+    if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){fit();render();});
+  })();
+
+  window.__slidesEditor={get deck(){return D;},render:render};
+})();
+</script>
+<script>
+// floating back-to-Studio arrow — editor/preview chrome only, never on the render path
+(function(){
+  if(new URLSearchParams(location.search).has('headless')||navigator.webdriver===true||/\bHeadless/.test(navigator.userAgent||''))return;
+  if(location.protocol!=='http:'&&location.protocol!=='https:')return;
+  var a=document.createElement('a');a.id='pw-back';a.href='/';a.title='Back to Studio';a.textContent='\u2190';
+  a.style.cssText="position:fixed;top:16px;left:16px;z-index:600;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font:500 17px/1 'DM Mono',monospace;color:#9fb0d0;text-decoration:none;background:rgba(6,10,19,.72);border:1px solid rgba(120,200,255,.3);border-radius:50%;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:.15s;";
+  a.onmouseenter=function(){a.style.color='#04121a';a.style.background='#39e8ff';a.style.borderColor='#39e8ff';};
+  a.onmouseleave=function(){a.style.color='#9fb0d0';a.style.background='rgba(6,10,19,.72)';a.style.borderColor='rgba(120,200,255,.3)';};
+  document.body.appendChild(a);
 })();
 </script>
 </body></html>

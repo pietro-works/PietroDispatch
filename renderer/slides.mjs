@@ -132,9 +132,12 @@ async function main(){
     const page=await attach(cdp,`http://127.0.0.1:${port}/slides.html`,true);
     for(const sl of deck.slides){
       const s={...sl};
-      if(s.bg) s.bg=await dataUrl(join(o.root,s.bg));
-      if(s.bgTop) s.bgTop=await dataUrl(join(o.root,s.bgTop));
-      if(s.bgBot) s.bgBot=await dataUrl(join(o.root,s.bgBot));
+      // only a real relative path is read from disk; data URLs pass through inline and
+      // numeric placeholder indices stay numbers for the template's brand gradients
+      const inline=(v)=>typeof v==='string'&&!v.startsWith('data:');
+      if(inline(s.bg)) s.bg=await dataUrl(join(o.root,s.bg));
+      if(inline(s.bgTop)) s.bgTop=await dataUrl(join(o.root,s.bgTop));
+      if(inline(s.bgBot)) s.bgBot=await dataUrl(join(o.root,s.bgBot));
       await page('Runtime.evaluate',{expression:`window.renderSlide(${JSON.stringify(s)}, ${JSON.stringify(deck.topic||'')})`});
       await page('Runtime.evaluate',{expression:`(async()=>{
         await document.fonts.ready;
