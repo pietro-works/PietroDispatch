@@ -97,7 +97,9 @@ async function main() {
     await page('Page.enable'); await page('Runtime.enable');
     await page('Emulation.setDeviceMetricsOverride', { width: CSS_W, height: CSS_H, deviceScaleFactor: 2, mobile: false });
     const load = cdp.once('Page.loadEventFired', sessionId);
-    await page('Page.navigate', { url: `http://127.0.0.1:${port}/${PAGE}` }); await load;
+    // ?headless is the explicit, version-proof signal that gates the in-browser editor off on the
+    // render path (the page also self-detects webdriver/HeadlessChrome, but the query is deterministic).
+    await page('Page.navigate', { url: `http://127.0.0.1:${port}/${PAGE}?headless` }); await load;
     if (o.data) {
       const spec = JSON.parse(await readFile(o.data, 'utf8'));
       if (spec.bg) {

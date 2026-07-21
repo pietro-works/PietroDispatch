@@ -1,14 +1,18 @@
 <!DOCTYPE html><!-- Pietro.works fluxogram template. Reusable 6-card flow diagram for README and LinkedIn.
      Data-driven: renderFluxo(spec) builds the cards from a spec; the default spec is the content pipeline.
-     Render with: node renderer/fluxogram.mjs [--data spec.json] [--out out.png] [--format png|webp]. -->
+     Render with: node renderer/fluxogram.mjs [--data spec.json] [--out out.png] [--format png|webp].
+     Opened standalone in a browser it is ALSO an interactive editor (all editor chrome lives OUTSIDE
+     #diagram; the headless render path — window.__FLUXO set, ?headless, or automation — never builds it). -->
 <html lang="en"><head>
 <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pietro.works — Fluxogram</title>
 <style>
 @font-face{font-family:'Clash Display';src:url('fonts/clash-600.woff2') format('woff2');font-weight:600;font-display:block;}
 @font-face{font-family:'Clash Display';src:url('fonts/clash-700.woff2') format('woff2');font-weight:700;font-display:block;}
 </style>
 <link rel="stylesheet" href="fonts/dm.local.css"/>
-<style>
+<style id="fx-style">
   :root{--ink:#eef4ff;--muted:#9fb0d0;--dim:#6b7da0;--cyan:#39e8ff;--green:#00ff99;--purple:#a855f7;}
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{background:#04070d;}
@@ -56,10 +60,98 @@
   .tag{align-self:flex-start;margin-top:14px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.1em;
     padding:5px 11px;border-radius:6px;color:#04140d;font-weight:500;
     background:linear-gradient(105deg,var(--cyan),var(--green) 55%,var(--purple));}
-  .arr{font-family:'DM Mono',monospace;font-size:22px;color:#7f93b6;padding:0 4px;flex:0 0 auto;text-shadow:0 1px 8px rgba(0,0,0,.8);}
+  .arr{font-family:'DM Mono',monospace;font-size:22px;color:var(--arr-color,#7f93b6);padding:0 4px;flex:0 0 auto;text-shadow:0 1px 8px rgba(0,0,0,.8);}
   footer{display:flex;justify-content:space-between;align-items:center;font-family:'DM Mono',monospace;font-size:16px;letter-spacing:.05em;color:#8194b5;text-shadow:0 1px 10px rgba(0,0,0,.7);}
   footer .value{color:#eaf3ff;}
   footer .value b{font-weight:500;background:linear-gradient(105deg,var(--cyan),var(--green) 52%,var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent;}
+</style>
+<style id="ed-style">
+  /* ---- interactive editor chrome (only built when NOT headless; entirely OUTSIDE #diagram) ---- */
+  body.ed-on{display:flex;flex-direction:column;height:100vh;overflow:hidden;
+    background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(20,30,60,.5),transparent 60%),linear-gradient(160deg,#05080f,#070b16 60%,#060a12);
+    font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);}
+  #ed-preview{flex:0 0 auto;display:flex;align-items:center;justify-content:center;overflow:hidden;
+    padding:22px;background:rgba(3,5,10,.5);border-bottom:1px solid rgba(120,160,230,.16);}
+  #ed-stagebox{position:relative;}
+  #ed-stage{position:absolute;top:0;left:0;transform-origin:top left;}
+  #ed-panel{flex:1 1 auto;overflow-y:auto;padding:18px 22px 90px;}
+  .ed-wrap{max-width:1180px;margin:0 auto;}
+  .ed-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .ed-brand{font-family:'DM Mono',monospace;font-size:15px;letter-spacing:.12em;color:#fff;}
+  .ed-brand sup{color:var(--cyan);font-size:.6em;top:-.55em;}
+  .ed-brand b{color:var(--muted);font-weight:400;letter-spacing:.08em;}
+  .ed-note{font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.04em;}
+  .ed-actions{margin-left:auto;display:flex;gap:9px;flex-wrap:wrap;}
+  .ed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start;}
+  .ed-sec{border:1px solid rgba(120,160,230,.16);background:rgba(255,255,255,.028);border-radius:14px;padding:15px 16px;}
+  .ed-sec h3{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);margin-bottom:12px;}
+  .ed-field{margin-bottom:11px;}
+  .ed-field:last-child{margin-bottom:0;}
+  .ed-field label{display:block;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--dim);margin-bottom:5px;}
+  .ed-in,.ed-sel{width:100%;font-family:'DM Mono',monospace;font-size:13px;color:var(--ink);
+    background:rgba(6,10,18,.7);border:1px solid rgba(120,160,230,.22);border-radius:8px;padding:8px 10px;outline:none;}
+  .ed-in:focus,.ed-sel:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(57,232,255,.14);}
+  .ed-in.mini{padding:6px 8px;font-size:12px;}
+  .ed-file{display:block;margin-top:8px;width:100%;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+  .ed-file::file-selector-button{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink);background:rgba(120,160,230,.12);border:1px solid rgba(120,160,230,.3);border-radius:7px;padding:5px 10px;margin-right:9px;cursor:pointer;}
+  .ed-row{display:flex;gap:8px;align-items:center;}
+  .ed-row.wrap{flex-wrap:wrap;}
+  .ed-hint{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:4px;line-height:1.5;}
+  .ed-btn{display:inline-flex;align-items:center;gap:7px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.02em;
+    border:1px solid rgba(120,160,230,.3);background:rgba(120,160,230,.08);color:var(--ink);border-radius:8px;
+    padding:8px 13px;cursor:pointer;transition:background .18s,border-color .18s,opacity .18s;white-space:nowrap;}
+  .ed-btn:hover{background:rgba(120,160,230,.18);}
+  .ed-btn:disabled{opacity:.32;cursor:not-allowed;}
+  .ed-btn.primary{background:var(--cyan);color:#04121a;border-color:var(--cyan);font-weight:600;}
+  .ed-btn.primary:hover{background:#5fefff;}
+  .ed-btn.g{border-color:rgba(57,232,255,.36);background:rgba(57,232,255,.09);}
+  .ed-btn.g .grad{background:linear-gradient(105deg,#39e8ff,#00ff99 52%,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:600;}
+  .ed-btn.tiny{padding:5px 9px;font-size:12px;line-height:1;}
+  input[type=range]{accent-color:var(--cyan);}
+  .ed-slider{display:flex;align-items:center;gap:10px;}
+  .ed-slider input[type=range]{flex:1;}
+  .ed-slider .val{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);min-width:52px;text-align:right;}
+  /* cards */
+  #ed-cards{display:flex;flex-direction:column;gap:12px;}
+  .ed-card{border:1px solid rgba(120,160,230,.18);background:rgba(6,10,18,.5);border-radius:12px;padding:12px;}
+  .ed-card.hero{border-color:rgba(0,255,153,.4);box-shadow:inset 0 0 0 1px rgba(0,255,153,.08);}
+  .ed-card-head{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+  .ed-card-head .idx{font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:.08em;}
+  .ed-card-head .sp{flex:1;}
+  .ed-glyph-btn{width:46px;height:46px;flex:0 0 auto;border:1px solid rgba(120,160,230,.3);border-radius:10px;
+    background:rgba(6,10,18,.7);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+  .ed-glyph-btn:hover{border-color:var(--cyan);}
+  .ed-glyph-btn .glyph{width:26px;height:26px;margin:0;filter:none;}
+  .ed-card-body{display:grid;grid-template-columns:1fr;gap:8px;}
+  .ed-two{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center;}
+  .ed-linerow{display:flex;gap:6px;align-items:center;}
+  .ed-linerow .ed-in{flex:1;}
+  .ed-swatch{display:inline-flex;align-items:center;gap:8px;}
+  .ed-chip{width:22px;height:22px;border-radius:6px;border:1px solid rgba(180,205,255,.3);cursor:pointer;padding:0;}
+  .ed-chip.sel{outline:2px solid var(--cyan);outline-offset:1px;}
+  .ed-hero-row{display:flex;align-items:center;gap:10px;margin-top:9px;flex-wrap:wrap;}
+  .ed-check{display:inline-flex;align-items:center;gap:7px;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;}
+  .ed-check input{accent-color:var(--green);width:15px;height:15px;}
+  /* glyph picker modal */
+  #ed-picker{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;
+    background:rgba(3,5,10,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+  #ed-picker.open{display:flex;}
+  .ed-picker-box{width:min(760px,92vw);max-height:80vh;overflow:auto;background:#0a0f1e;border:1px solid rgba(120,160,230,.28);
+    border-radius:16px;padding:18px;box-shadow:0 30px 80px -20px rgba(0,0,0,.8);}
+  .ed-picker-box h3{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
+  .ed-glyph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px;}
+  .ed-glyph-cell{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 6px;cursor:pointer;
+    border:1px solid rgba(120,160,230,.16);border-radius:10px;background:rgba(6,10,18,.5);transition:border-color .15s,background .15s;}
+  .ed-glyph-cell:hover{border-color:var(--cyan);background:rgba(57,232,255,.08);}
+  .ed-glyph-cell.sel{border-color:var(--green);background:rgba(0,255,153,.08);}
+  .ed-glyph-cell .glyph{width:34px;height:34px;margin:0;filter:none;}
+  .ed-glyph-cell span{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.02em;}
+  /* toast */
+  #ed-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);z-index:500;
+    font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.03em;color:#eaf3ff;
+    background:rgba(10,17,32,.92);border:1px solid rgba(120,200,255,.3);border-radius:10px;padding:10px 16px;
+    opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:0 12px 40px -12px rgba(0,0,0,.8);}
+  #ed-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
@@ -105,13 +197,16 @@ function glyphHtml(name){
   return '<div class="glyph'+(g.filled?' filled':'')+'"><svg viewBox="'+(g.vb||'0 0 24 24')+'">'+g.s+'</svg></div>';
 }
 
-// renderFluxo(spec): build the flow. spec = { kick, flow, cards:[{num,glyph,name,l1,l2,hero,tag}], footL, footR, bgUrl, bgPos, bgOpacity }
+// renderFluxo(spec): build the flow. spec = { kick, flow, cards:[{num,glyph,name,l1,l2,hero,tag}], footL, footR, bgUrl, bgPos, bgOpacity, arr, arrColor }
+// arr / arrColor are optional connector overrides; absent => identical to the original template.
 function renderFluxo(spec){
   const s = spec || DEFAULT;
   const photo = document.querySelector('.photo');
   if(s.bgUrl) photo.style.backgroundImage = "url('"+s.bgUrl+"')";
   photo.style.backgroundPosition = s.bgPos || '43% 30%';
   if(s.bgOpacity!=null) photo.style.opacity = s.bgOpacity;
+  document.getElementById('diagram').style.setProperty('--arr-color', s.arrColor || '');
+  const arrChar = (s.arr!=null && s.arr!=='') ? s.arr : '→';
   const cards = s.cards.map(function(c){
     return '<div class="card'+(c.hero?' gate':'')+'">'
       + '<span class="num">'+c.num+'</span>'
@@ -120,7 +215,7 @@ function renderFluxo(spec){
       + '<div class="lines">'+c.l1+'<br>'+c.l2+'</div>'
       + (c.tag?'<span class="tag">'+c.tag+'</span>':'')
       + '</div>';
-  }).join('<span class="arr">→</span>');
+  }).join('<span class="arr">'+arrChar+'</span>');
   document.getElementById('wrap').innerHTML =
       '<header><span class="kick"><span class="d"></span>'+s.kick+'</span><span class="flow">'+s.flow+'</span></header>'
     + '<div class="row">'+cards+'</div>'
@@ -142,5 +237,492 @@ const DEFAULT = {
 };
 
 renderFluxo(window.__FLUXO || DEFAULT);
+</script>
+<script>
+/* ============================================================================
+   Interactive editor. HARD RULE: this block is a no-op on the headless render
+   path. It builds nothing and shows nothing when window.__FLUXO is set, when the
+   URL carries ?headless, or when the page is driven by automation (the fluxogram
+   renderer runs under HeadlessChrome, navigator.webdriver === true). #diagram is
+   left untouched as the pure screenshot surface; every control lives outside it.
+   ========================================================================== */
+(function(){
+  var params = new URLSearchParams(location.search);
+  // PACS0002 — headless render path builds NO editor chrome; #diagram stays the pure screenshot surface — AGENTS.md
+  var HEADLESS = params.has('headless')
+    || window.__FLUXO != null
+    || navigator.webdriver === true
+    || /\bHeadless/.test(navigator.userAgent || '');
+  if (HEADLESS) return;
+
+  var clone = function(o){ return JSON.parse(JSON.stringify(o)); };
+  var BG_COUNT = 20;
+  var ARROWS = ['→','⟶','⇒','⭢','▸','➔','· ·','+','/','∷'];
+  var ARR_SWATCH = ['','#39e8ff','#00ff99','#a855f7','#eaf3ff','#ffb86c'];
+
+  // ---- editor state, seeded from DEFAULT ------------------------------------
+  var S = {
+    kick: DEFAULT.kick, flow: DEFAULT.flow, footL: DEFAULT.footL, footR: DEFAULT.footR,
+    arr: '→', arrColor: '',
+    bgKind: 'default',            // 'default' | 'db' | 'custom'
+    bgName: 'bg-01.png',          // used when bgKind === 'db'
+    bgUrl: '',                    // data URL, used when bgKind === 'custom'
+    bgX: 43, bgY: 30, bgOpacity: 0.5,
+    cards: clone(DEFAULT.cards)
+  };
+  S.cards.forEach(function(c){ if(c.hero==null) c.hero=false; if(c.tag==null) c.tag=''; });
+
+  function bgPosStr(){ return S.bgX + '% ' + S.bgY + '%'; }
+
+  // spec fed to renderFluxo for the live preview (renderFluxo only knows bgUrl)
+  function specForRender(){
+    var o = {
+      kick:S.kick, flow:S.flow, footL:S.footL, footR:S.footR,
+      bgPos:bgPosStr(), bgOpacity:S.bgOpacity, arr:S.arr, arrColor:S.arrColor,
+      cards:S.cards.map(function(c){
+        return {num:c.num,glyph:c.glyph,name:c.name,l1:c.l1,l2:c.l2,hero:!!c.hero,tag:c.tag||''};
+      })
+    };
+    o.bgUrl = S.bgKind==='custom' ? S.bgUrl : (S.bgKind==='db' ? S.bgName : 'fluxogram-bg.jpg');
+    return o;
+  }
+
+  // spec written to disk / clipboard, in the shape fluxogram.mjs consumes
+  function exportSpec(){
+    var o = { kick:S.kick, flow:S.flow };
+    if(S.bgKind==='db') o.bg = S.bgName;              // relative to the spec file; mjs inlines it
+    else if(S.bgKind==='custom') o.bgUrl = S.bgUrl;   // self-contained data URL, passed straight through
+    if(bgPosStr() !== '43% 30%') o.bgPos = bgPosStr();
+    if(Number(S.bgOpacity) !== 0.5) o.bgOpacity = Number(S.bgOpacity);
+    o.footL = S.footL; o.footR = S.footR;
+    if(S.arr && S.arr !== '→') o.arr = S.arr;
+    if(S.arrColor) o.arrColor = S.arrColor;
+    o.cards = S.cards.map(function(c){
+      var cc = {num:c.num,glyph:c.glyph,name:c.name,l1:c.l1,l2:c.l2};
+      if(c.hero){ cc.hero = true; if(c.tag) cc.tag = c.tag; }
+      return cc;
+    });
+    return o;
+  }
+
+  function applyPreview(){ renderFluxo(specForRender()); }
+
+  // ---- build the shell ------------------------------------------------------
+  var diagram = document.getElementById('diagram');
+  document.body.classList.add('ed-on');
+
+  var preview = el('div', {id:'ed-preview'});
+  var stagebox = el('div', {id:'ed-stagebox'});
+  var stage = el('div', {id:'ed-stage'});
+  stage.appendChild(diagram);          // move #diagram into the scaled stage (adds no border to it)
+  stagebox.appendChild(stage);
+  preview.appendChild(stagebox);
+
+  var panel = el('div', {id:'ed-panel'});
+  var wrap = el('div', {class:'ed-wrap'});
+  panel.appendChild(wrap);
+
+  document.body.appendChild(preview);
+  document.body.appendChild(panel);
+
+  // top bar ------------------------------------------------------------------
+  var top = el('div', {class:'ed-top'});
+  top.innerHTML =
+    '<span class="ed-brand">Pietro<sup>.works</sup> <b>fluxogram editor</b></span>'
+    + '<span class="ed-note">controls are not part of the exported diagram</span>';
+  var actions = el('div', {class:'ed-actions'});
+  actions.appendChild(btn('Copy JSON', copyJson, 'primary'));
+  actions.appendChild(btn('Download .json', downloadJson));
+  actions.appendChild(btn('Download PNG', downloadPng, 'g', '⬇'));
+  actions.appendChild(btn('Reset', resetAll));
+  top.appendChild(actions);
+  wrap.appendChild(top);
+
+  var grid = el('div', {class:'ed-grid'});
+  wrap.appendChild(grid);
+
+  // section: header + footer -------------------------------------------------
+  var secText = section('Header & footer');
+  secText.appendChild(textField('Kick (title pill)', S.kick, function(v){ S.kick=v; applyPreview(); }, 'plain text · no period'));
+  secText.appendChild(textField('Flow (top-right spine)', S.flow, function(v){ S.flow=v; applyPreview(); }, 'wrap the pivot beat in &lt;b&gt;…&lt;/b&gt; for the gradient'));
+  secText.appendChild(textField('Footer left', S.footL, function(v){ S.footL=v; applyPreview(); }, 'the plain promise'));
+  secText.appendChild(textField('Footer right', S.footR, function(v){ S.footR=v; applyPreview(); }, 'one &lt;b&gt;…&lt;/b&gt; gradient phrase carries the payoff'));
+  grid.appendChild(secText);
+
+  // section: background ------------------------------------------------------
+  var secBg = section('Background');
+  var bgSel = document.createElement('select');
+  bgSel.className = 'ed-sel';
+  var optDef = document.createElement('option'); optDef.value='default'; optDef.textContent='Default (fluxogram-bg.jpg)'; bgSel.appendChild(optDef);
+  var og = document.createElement('optgroup'); og.label='Shared library (bg-db · relative path)';
+  for(var i=1;i<=BG_COUNT;i++){ var nm='bg-'+String(i).padStart(2,'0')+'.png'; var op=document.createElement('option'); op.value='db:'+nm; op.textContent=nm; og.appendChild(op); }
+  bgSel.appendChild(og);
+  var optCus = document.createElement('option'); optCus.value='custom'; optCus.textContent='Custom file…'; bgSel.appendChild(optCus);
+  bgSel.value = 'default';
+  var bgFile = document.createElement('input'); bgFile.type='file'; bgFile.accept='image/*'; bgFile.className='ed-file'; bgFile.style.display='none';
+  function showBgFile(on){ bgFile.style.display = on ? '' : 'none'; }
+  bgSel.addEventListener('change', function(){
+    var v = bgSel.value;
+    if(v==='custom'){ showBgFile(true); bgFile.click(); return; }  // stay visible so a different image can be swapped in
+    showBgFile(false);
+    if(v.indexOf('db:')===0){ S.bgKind='db'; S.bgName=v.slice(3); }
+    else { S.bgKind='default'; }
+    applyPreview();
+  });
+  bgFile.addEventListener('change', function(e){
+    var f = e.target.files && e.target.files[0];
+    if(!f){ bgSel.value = kindToSel(); showBgFile(S.bgKind==='custom'); return; }
+    var r = new FileReader();
+    r.onload = function(){ S.bgUrl = r.result; S.bgKind='custom'; bgSel.value='custom'; showBgFile(true); applyPreview(); toast('custom background set'); };
+    r.readAsDataURL(f); bgFile.value='';
+  });
+  // dialog dismissed with no pick and no prior custom image: fall back to the real state
+  bgFile.addEventListener('cancel', function(){ if(S.bgKind!=='custom'){ bgSel.value = kindToSel(); showBgFile(false); } });
+  var fBg = field('Image'); fBg.appendChild(bgSel); fBg.appendChild(bgFile);
+  fBg.appendChild(hint('bg-01…bg-20 load from files sitting next to fluxogram.html'));
+  secBg.appendChild(fBg);
+  secBg.appendChild(sliderField('Position X', 0, 100, 1, S.bgX, '%', function(v){ S.bgX=v; applyPreview(); }));
+  secBg.appendChild(sliderField('Position Y', 0, 100, 1, S.bgY, '%', function(v){ S.bgY=v; applyPreview(); }));
+  secBg.appendChild(sliderField('Opacity', 0, 1, 0.02, S.bgOpacity, '', function(v){ S.bgOpacity=v; applyPreview(); }, 2));
+  grid.appendChild(secBg);
+
+  // section: connector -------------------------------------------------------
+  var secArr = section('Connector');
+  var arrSel = document.createElement('select'); arrSel.className='ed-sel';
+  ARROWS.forEach(function(a){ var o=document.createElement('option'); o.value=a; o.textContent=a; arrSel.appendChild(o); });
+  arrSel.value = S.arr;
+  arrSel.addEventListener('change', function(){ S.arr=arrSel.value; applyPreview(); });
+  var fArr = field('Symbol'); fArr.appendChild(arrSel); secArr.appendChild(fArr);
+  var fCol = field('Colour');
+  var swat = el('div', {class:'ed-swatch'});
+  ARR_SWATCH.forEach(function(col){
+    var b = document.createElement('button'); b.className='ed-chip'; b.type='button';
+    b.style.background = col || 'linear-gradient(135deg,#7f93b6,#4a5a78)';
+    b.title = col || 'default';
+    if(col===S.arrColor) b.classList.add('sel');
+    b.addEventListener('click', function(){
+      S.arrColor = col;
+      swat.querySelectorAll('.ed-chip').forEach(function(x){ x.classList.remove('sel'); });
+      b.classList.add('sel'); applyPreview();
+    });
+    swat.appendChild(b);
+  });
+  fCol.appendChild(swat); fCol.appendChild(hint('leftmost = template default (#7f93b6)')); secArr.appendChild(fCol);
+  grid.appendChild(secArr);
+
+  // section: cards -----------------------------------------------------------
+  var secCards = section('Cards');
+  secCards.style.gridColumn = '1 / -1';
+  var cardsHost = el('div', {id:'ed-cards'});
+  secCards.appendChild(cardsHost);
+  var cardBtns = el('div', {class:'ed-row wrap', style:'margin-top:12px'});
+  var addBtn = btn('+ Add card', addCard);
+  var renumBtn = btn('Renumber 01…0N', renumber);
+  cardBtns.appendChild(addBtn); cardBtns.appendChild(renumBtn);
+  secCards.appendChild(cardBtns);
+  grid.appendChild(secCards);
+
+  // glyph picker modal -------------------------------------------------------
+  var picker = el('div', {id:'ed-picker'});
+  var pickerBox = el('div', {class:'ed-picker-box'});
+  var pickerHead = document.createElement('h3');
+  pickerHead.innerHTML = '<span>Pick a glyph</span>';
+  var pickerClose = btn('Close', closePicker, '', '', 'tiny'); pickerHead.appendChild(pickerClose);
+  var glyphGrid = el('div', {class:'ed-glyph-grid'});
+  Object.keys(G).forEach(function(name){
+    var cell = document.createElement('button'); cell.type='button'; cell.className='ed-glyph-cell'; cell.dataset.g=name;
+    cell.innerHTML = glyphHtml(name) + '<span>'+name+'</span>';
+    cell.addEventListener('click', function(){ pickGlyph(name); });
+    glyphGrid.appendChild(cell);
+  });
+  pickerBox.appendChild(pickerHead); pickerBox.appendChild(glyphGrid); picker.appendChild(pickerBox);
+  picker.addEventListener('click', function(e){ if(e.target===picker) closePicker(); });
+  document.body.appendChild(picker);
+
+  var toastEl = el('div', {id:'ed-toast'}); document.body.appendChild(toastEl);
+
+  var pickerFor = -1;
+  function openPicker(idx){
+    pickerFor = idx;
+    glyphGrid.querySelectorAll('.ed-glyph-cell').forEach(function(c){ c.classList.toggle('sel', c.dataset.g===S.cards[idx].glyph); });
+    picker.classList.add('open');
+  }
+  function closePicker(){ picker.classList.remove('open'); pickerFor=-1; }
+  function pickGlyph(name){ if(pickerFor<0) return; S.cards[pickerFor].glyph=name; closePicker(); rebuildCards(); applyPreview(); }
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closePicker(); });
+
+  // ---- card list rendering --------------------------------------------------
+  function rebuildCards(){
+    cardsHost.innerHTML = '';
+    S.cards.forEach(function(c, idx){
+      var box = el('div', {class:'ed-card'+(c.hero?' hero':'')});
+
+      var head = el('div', {class:'ed-card-head'});
+      var gbtn = document.createElement('button'); gbtn.type='button'; gbtn.className='ed-glyph-btn';
+      gbtn.innerHTML = glyphHtml(c.glyph); gbtn.title='glyph: '+c.glyph;
+      gbtn.addEventListener('click', function(){ openPicker(idx); });
+      head.appendChild(gbtn);
+      head.appendChild(el('span', {class:'idx', text:'card '+(idx+1)}));
+      head.appendChild(el('span', {class:'sp'}));
+      var up = btn('◀', function(){ moveCard(idx,-1); }, '', '', 'tiny'); up.disabled = idx===0; up.title='move left';
+      var dn = btn('▶', function(){ moveCard(idx, 1); }, '', '', 'tiny'); dn.disabled = idx===S.cards.length-1; dn.title='move right';
+      var rm = btn('✕', function(){ removeCard(idx); }, '', '', 'tiny'); rm.disabled = S.cards.length<=3; rm.title='remove card';
+      head.appendChild(up); head.appendChild(dn); head.appendChild(rm);
+      box.appendChild(head);
+
+      var body = el('div', {class:'ed-card-body'});
+      var numName = el('div', {class:'ed-two'});
+      numName.appendChild(inlineInput(c.num, 'num', function(v){ c.num=v; applyPreview(); }));
+      numName.appendChild(inlineInput(c.name, 'name', function(v){ c.name=v; applyPreview(); }));
+      body.appendChild(numName);
+      body.appendChild(lineInput(c.l1, 'line 1', function(v){ c.l1=v; applyPreview(); }, function(cls){ c.l1=toggleWrap(c.l1,cls); rebuildCards(); applyPreview(); }));
+      body.appendChild(lineInput(c.l2, 'line 2', function(v){ c.l2=v; applyPreview(); }, function(cls){ c.l2=toggleWrap(c.l2,cls); rebuildCards(); applyPreview(); }));
+      box.appendChild(body);
+
+      var heroRow = el('div', {class:'ed-hero-row'});
+      var lab = document.createElement('label'); lab.className='ed-check';
+      var ck = document.createElement('input'); ck.type='checkbox'; ck.checked=!!c.hero;
+      ck.addEventListener('change', function(){ c.hero=ck.checked; rebuildCards(); applyPreview(); });
+      lab.appendChild(ck); lab.appendChild(document.createTextNode('pivot (hero)'));
+      heroRow.appendChild(lab);
+      if(c.hero){
+        var tagIn = inlineInput(c.tag||'', 'tag (≤ 26 chars)', function(v){ c.tag=v; applyPreview(); });
+        tagIn.style.flex='1'; tagIn.style.minWidth='160px';
+        heroRow.appendChild(tagIn);
+      }
+      box.appendChild(heroRow);
+
+      cardsHost.appendChild(box);
+    });
+    addBtn.disabled = S.cards.length>=6;
+  }
+
+  function moveCard(idx, dir){
+    var j = idx+dir; if(j<0||j>=S.cards.length) return;
+    var t = S.cards[idx]; S.cards[idx]=S.cards[j]; S.cards[j]=t;
+    rebuildCards(); applyPreview();
+  }
+  function removeCard(idx){
+    if(S.cards.length<=3) return;
+    S.cards.splice(idx,1); rebuildCards(); applyPreview();
+  }
+  function nextNum(){
+    var mx = 0;
+    S.cards.forEach(function(c){ var n = parseInt(c.num, 10); if(!isNaN(n) && n > mx) mx = n; });
+    return String((mx > 0 ? mx : S.cards.length) + 1).padStart(2,'0');
+  }
+  function addCard(){
+    if(S.cards.length>=6) return;
+    S.cards.push({num:nextNum(), glyph:'zap', name:'Step', l1:'first line', l2:'second line', hero:false, tag:''});
+    rebuildCards(); applyPreview();
+  }
+  function renumber(){
+    S.cards.forEach(function(c,i){ c.num=String(i+1).padStart(2,'0'); });
+    rebuildCards(); applyPreview(); toast('renumbered');
+  }
+  function toggleWrap(val, cls){
+    var full = new RegExp('^<span class="'+cls+'">([\\s\\S]*)</span>$');
+    var other = cls==='hi' ? 'hg' : 'hi';
+    var fullOther = new RegExp('^<span class="'+other+'">([\\s\\S]*)</span>$');
+    if(full.test(val)) return val.replace(full, '$1');
+    if(fullOther.test(val)) return val.replace(fullOther, '<span class="'+cls+'">$1</span>');
+    return '<span class="'+cls+'">'+val+'</span>';
+  }
+
+  // ---- export actions -------------------------------------------------------
+  function specJson(){ return JSON.stringify(exportSpec(), null, 2); }
+  function copyJson(){
+    var txt = specJson();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){ toast('spec JSON copied'); }, function(){ fallbackCopy(txt); });
+    } else { fallbackCopy(txt); }
+  }
+  function fallbackCopy(txt){
+    var ta = document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('spec JSON copied'); }catch(e){ toast('copy failed — use Download .json'); }
+    ta.remove();
+  }
+  function downloadJson(){
+    var blob = new Blob([specJson()], {type:'application/json'});
+    triggerDownload(URL.createObjectURL(blob), 'fluxogram-spec.json'); toast('spec.json downloaded');
+  }
+  function triggerDownload(url, name){
+    var a = document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+
+  function resetAll(){
+    S.kick=DEFAULT.kick; S.flow=DEFAULT.flow; S.footL=DEFAULT.footL; S.footR=DEFAULT.footR;
+    S.arr='→'; S.arrColor=''; S.bgKind='default'; S.bgName='bg-01.png'; S.bgUrl='';
+    S.bgX=43; S.bgY=30; S.bgOpacity=0.5; S.cards=clone(DEFAULT.cards);
+    S.cards.forEach(function(c){ if(c.hero==null) c.hero=false; if(c.tag==null) c.tag=''; });
+    bgSel.value='default'; arrSel.value=S.arr; showBgFile(false);
+    rebuildControls(); rebuildCards(); applyPreview(); toast('reset to the default pipeline');
+  }
+
+  // ---- offline PNG export (SVG <foreignObject>, fonts + images embedded) -----
+  var _fontCss = null, _fetchCache = {};
+  function fetchDataURL(url){
+    if(_fetchCache[url]) return _fetchCache[url];
+    var p = fetch(url).then(function(r){ if(!r.ok) throw new Error('fetch '+url); return r.blob(); }).then(function(b){
+      return new Promise(function(res, rej){ var fr=new FileReader(); fr.onload=function(){ res(fr.result); }; fr.onerror=rej; fr.readAsDataURL(b); });
+    });
+    _fetchCache[url] = p; return p;
+  }
+  function fontCss(){
+    if(_fontCss) return _fontCss;
+    var faces = [
+      ['Clash Display',600,'fonts/clash-600.woff2'],
+      ['Clash Display',700,'fonts/clash-700.woff2'],
+      ['DM Sans',400,'fonts/rP2Yp2ywxg089UriI5-g4vlH9VoD8Cmcqbu0-K6z9mXg.woff2'],
+      ['DM Sans',500,'fonts/rP2Yp2ywxg089UriI5-g4vlH9VoD8Cmcqbu0-K6z9mXg.woff2'],
+      ['DM Sans',600,'fonts/rP2Yp2ywxg089UriI5-g4vlH9VoD8Cmcqbu0-K6z9mXg.woff2'],
+      ['DM Sans',700,'fonts/rP2Yp2ywxg089UriI5-g4vlH9VoD8Cmcqbu0-K6z9mXg.woff2'],
+      ['DM Mono',400,'fonts/aFTU7PB1QTsUX8KYthqQBK6PYK0.woff2'],
+      ['DM Mono',500,'fonts/aFTR7PB1QTsUX8KYvumzEYOtbYf-Vlg.woff2']
+    ];
+    _fontCss = Promise.all(faces.map(function(f){
+      return fetchDataURL(f[2]).then(function(d){
+        return "@font-face{font-family:'"+f[0]+"';font-style:normal;font-weight:"+f[1]+";font-display:block;src:url("+d+") format('woff2');}";
+      }, function(){ return ''; });
+    })).then(function(parts){ return parts.join(''); });
+    return _fontCss;
+  }
+  function bgDataUrl(){
+    if(S.bgKind==='custom') return Promise.resolve(S.bgUrl);
+    var url = S.bgKind==='db' ? S.bgName : 'fluxogram-bg.jpg';
+    return fetchDataURL(url).catch(function(){ return null; });
+  }
+  function downloadPng(){
+    toast('rendering PNG…');
+    Promise.all([
+      fontCss(),
+      bgDataUrl(),
+      fetchDataURL('hero-dot-matrix-static.png').catch(function(){ return null; })
+    ]).then(function(res){
+      var css = res[0], bgu = res[1], dotu = res[2];
+      var node = diagram.cloneNode(true);
+      var ph = node.querySelector('.photo');
+      if(ph){ if(bgu) ph.style.backgroundImage="url('"+bgu+"')"; ph.style.backgroundPosition=bgPosStr(); ph.style.opacity=S.bgOpacity; }
+      var dt = node.querySelector('.dots'); if(dt && dotu) dt.style.backgroundImage="url('"+dotu+"')";
+      var baseCss = document.getElementById('fx-style').textContent;
+      // foreignObject can't composite backdrop-filter (the card right-edge clips) and rasterizes
+      // at the SVG's declared size — so we render NATIVE 2x (no upscale = no blur) and flatten the
+      // glass to a solid fill. The pixel-perfect path is still Copy JSON -> fluxogram.mjs.
+      var W = 1600, H = 548, SC = 2;
+      var flatCss =
+        '.card,.kick{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}'
+        + '.card:not(.gate){background:rgba(12,19,34,.93)!important;}'
+        + '.kick{background:rgba(6,10,18,.62)!important;}';
+      var inner = new XMLSerializer().serializeToString(node);
+      var svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="'+(W*SC)+'" height="'+(H*SC)+'">'
+        + '<foreignObject x="0" y="0" width="'+(W*SC)+'" height="'+(H*SC)+'">'
+        + '<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+W+'px;height:'+H+'px;transform:scale('+SC+');transform-origin:top left;">'
+        + '<style>'+css+baseCss+flatCss+'</style>'
+        + inner
+        + '</div></foreignObject></svg>';
+      var img = new Image();
+      img.onload = function(){
+        var cv = document.createElement('canvas'); cv.width=W*SC; cv.height=H*SC;
+        var ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        try {
+          cv.toBlob(function(blob){
+            if(!blob){ toast('PNG failed — try Copy JSON'); return; }
+            triggerDownload(URL.createObjectURL(blob), 'fluxogram.png'); toast('PNG downloaded');
+          }, 'image/png');
+        } catch(e){ toast('PNG blocked (serve over HTTP) — use Copy JSON'); }
+      };
+      img.onerror = function(){ toast('PNG failed to rasterize — use Copy JSON'); };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }).catch(function(){ toast('PNG needs HTTP — use Copy JSON / fluxogram.mjs'); });
+  }
+
+  // ---- small DOM helpers ----------------------------------------------------
+  function el(tag, opt){
+    var e = document.createElement(tag); opt = opt||{};
+    if(opt.id) e.id=opt.id; if(opt.class) e.className=opt.class;
+    if(opt.style) e.setAttribute('style', opt.style); if(opt.text!=null) e.textContent=opt.text;
+    return e;
+  }
+  function btn(label, fn, cls, icon, size){
+    var b = document.createElement('button'); b.type='button';
+    b.className = 'ed-btn' + (cls?(' '+cls):'') + (size?(' '+size):'');
+    b.innerHTML = cls==='g' ? '<span class="grad">'+(icon?icon+' ':'')+label+'</span>' : (icon?icon+' ':'')+label;
+    b.addEventListener('click', fn); return b;
+  }
+  function section(title){ var s=el('div',{class:'ed-sec'}); s.appendChild(el('h3',{text:title})); return s; }
+  function field(label){ var f=el('div',{class:'ed-field'}); f.appendChild(el('label',{text:label})); return f; }
+  function hint(html){ var h=el('div',{class:'ed-hint'}); h.innerHTML=html; return h; }
+  function textField(label, val, onInput, hintHtml){
+    var f = field(label);
+    var inp = document.createElement('input'); inp.type='text'; inp.className='ed-in'; inp.value=val; inp.spellcheck=false;
+    inp.addEventListener('input', function(){ onInput(inp.value); });
+    f.appendChild(inp); if(hintHtml) f.appendChild(hint(hintHtml)); return f;
+  }
+  function inlineInput(val, ph, onInput){
+    var inp = document.createElement('input'); inp.type='text'; inp.className='ed-in mini'; inp.value=val; inp.placeholder=ph; inp.spellcheck=false;
+    inp.addEventListener('input', function(){ onInput(inp.value); }); return inp;
+  }
+  function lineInput(val, ph, onInput, onWrap){
+    var row = el('div', {class:'ed-linerow'});
+    var inp = document.createElement('input'); inp.type='text'; inp.className='ed-in mini'; inp.value=val; inp.placeholder=ph; inp.spellcheck=false;
+    inp.addEventListener('input', function(){ onInput(inp.value); });
+    var cy = btn('cyan', function(){ onWrap('hi'); }, '', '', 'tiny'); cy.title='wrap line in cyan highlight';
+    var gr = btn('green', function(){ onWrap('hg'); }, '', '', 'tiny'); gr.title='wrap line in green highlight';
+    row.appendChild(inp); row.appendChild(cy); row.appendChild(gr); return row;
+  }
+  function sliderField(label, min, max, step, val, unit, onInput, digits){
+    var f = field(label);
+    var box = el('div', {class:'ed-slider'});
+    var r = document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=step; r.value=val;
+    var out = el('span', {class:'val', text: fmt(val)});
+    function fmt(v){ return (digits!=null ? Number(v).toFixed(digits) : v) + unit; }
+    r.addEventListener('input', function(){ var v=Number(r.value); out.textContent=fmt(v); onInput(v); });
+    box.appendChild(r); box.appendChild(out); f.appendChild(box); f._range=r; f._out=out;
+    return f;
+  }
+  function kindToSel(){ return S.bgKind==='db' ? ('db:'+S.bgName) : (S.bgKind==='custom' ? 'custom' : 'default'); }
+
+  // rebuild static control values after a reset (sliders/inputs live outside the cards)
+  function rebuildControls(){
+    var inputs = secText.querySelectorAll('input.ed-in');
+    inputs[0].value=S.kick; inputs[1].value=S.flow; inputs[2].value=S.footL; inputs[3].value=S.footR;
+    var sliders = secBg.querySelectorAll('.ed-slider');
+    setSlider(sliders[0], S.bgX); setSlider(sliders[1], S.bgY); setSlider(sliders[2], S.bgOpacity, 2);
+    swat.querySelectorAll('.ed-chip').forEach(function(x,ix){ x.classList.toggle('sel', ARR_SWATCH[ix]===S.arrColor); });
+  }
+  function setSlider(box, v, digits){
+    var r=box.querySelector('input[type=range]'), o=box.querySelector('.val');
+    if(r) r.value=v; if(o){ var unit=o.textContent.replace(/[-0-9.]/g,''); o.textContent=(digits!=null?Number(v).toFixed(digits):v)+unit; }
+  }
+
+  function toast(msg){
+    toastEl.textContent = msg; toastEl.classList.add('show');
+    clearTimeout(toastEl._t); toastEl._t = setTimeout(function(){ toastEl.classList.remove('show'); }, 1800);
+  }
+
+  // ---- preview scaling ------------------------------------------------------
+  function fitStage(){
+    var availW = preview.clientWidth - 4;
+    var availH = Math.min(preview.clientHeight, Math.round(window.innerHeight*0.5)) - 4;
+    var k = Math.min(availW/1600, availH/548, 1); if(!(k>0)) k = availW/1600;
+    stagebox.style.width = (1600*k)+'px';
+    stagebox.style.height = (548*k)+'px';
+    stage.style.transform = 'scale('+k+')';
+  }
+
+  // ---- boot -----------------------------------------------------------------
+  rebuildCards();
+  applyPreview();
+  fitStage();
+  window.addEventListener('resize', fitStage);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitStage);
+
+  // exposed for headless self-tests / tooling; harmless in the browser
+  window.__fluxoEditor = { state:S, exportSpec:exportSpec, specForRender:specForRender, applyPreview:applyPreview, G:G };
+})();
 </script>
 </body></html>
