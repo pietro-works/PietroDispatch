@@ -111,13 +111,13 @@ The pipeline diagram near the top of this page is not a drawing. It came out of 
 
 The look is shared. It takes one warm background from a small cold-steel library instead of a fresh GPT Image 2 paint, then lays the brand scrim and gradient accent over it. A spec is a small JSON file, so a fluxogram is re-renderable: change a card, run it again, get a clean 2400 by 822 PNG. Four are out so far, on the eval loop, build versus buy, keeping a human in the loop, and cutting the model bill.
 
-Like article covers, this track stays off the calendar. A fluxogram gets made when an idea is worth teaching, not on a clock.
+This track runs on a clock now: two fluxograms every Thursday, the same hour sliders goes out. Each is a fresh durable idea, picked, drawn, gated, and dropped in Drive.
 
 ## Scheduling and the queue
 
 ![Pietro Studio](docs/assets/studio.webp)
 
-The two feed tracks never wait for someone to press start. Each runs as a scheduled job on its own cadence, builds the dated folder, and drops it in Drive: dispatch on odd days, sliders on a lighter evergreen rhythm. Article covers stay off the calendar, made on demand.
+The two feed tracks never wait for someone to press start. Each runs as a scheduled job on its own cadence, builds the dated folder, and drops it in Drive: dispatch on odd days, sliders on a lighter evergreen rhythm, fluxograms two every Thursday. Article covers stay off the calendar, made on demand.
 
 What comes out flows into a small control room. Studio reads every deck and card into one queue, tags each from unscheduled through scheduled to verified, finds the next open slot, and books the approved onto LinkedIn. A single-page dashboard in the same dark palette as the work, no framework. You pick what ships, the slot engine keeps the calendar.
 
@@ -166,7 +166,7 @@ pietro-dispatch/
 
 ## Status
 
-Both feed generators run on a schedule now, firing locally and delivering to Drive untouched. Article covers and fluxograms stay the deliberate exceptions, made on demand. Built as a study in AI-assisted rapid iteration: encode the taste once, then let the machine do the repetitive part and keep the human on the decision.
+Three tracks run on a schedule now, firing locally and delivering to Drive untouched: news on odd days, sliders and fluxograms on Tuesday and Thursday. Article covers stay the deliberate exception, made on demand. Built as a study in AI-assisted rapid iteration: encode the taste once, then let the machine do the repetitive part and keep the human on the decision.
 
 ---
 

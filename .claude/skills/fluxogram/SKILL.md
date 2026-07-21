@@ -7,7 +7,7 @@ description: Make one Pietro.works fluxogram: an evergreen concept taught as a w
 
 You are producing one Pietro.works fluxogram: a durable idea laid out as a wide six-card horizontal flow. Read `MASTERPLAN.md` once for the system. Voice is governed by `prompts/PIETRO_WORKS_VOICE.MD` and `prompts/HUMANIZE.md`. The concept bar is the evergreen scan in `prompts/slides-curation.md` (shared with slides). The spec design and the caption format are `prompts/fluxogram-generation.md`. This file is the sequence and the data contracts.
 
-Fluxograms are evergreen, not news, and a single wide PNG, not a carousel or a PDF. Like article covers, the track has no schedule: a fluxogram gets made when an idea is worth teaching. Set `DATE` to today in `YYYY-MM-DD`, derive a short kebab `slug` from the concept, and stage under `work/fluxogram-<DATE>-<slug>/`.
+Fluxograms are evergreen, not news, and a single wide PNG, not a carousel or a PDF. The track runs on a schedule: two fluxograms every Thursday at 13:00, the same hour as slides, each a fresh durable idea. It can also be run on demand. Set `DATE` to today in `YYYY-MM-DD`, derive a short kebab `slug` from the concept, and stage under `work/fluxogram-<DATE>-<slug>/`.
 
 ## Step 1: Scan and pick
 
@@ -55,7 +55,7 @@ Before the first upload of a session that writes to Drive, confirm with Pietro. 
 - Six cards, one hero. The hero is the pivot the concept turns on, not decoration.
 - Each mono line is `white-space:nowrap`; if it is too long it clips silently. Short lines are the whole discipline.
 - A fluxogram must be evergreen. If it leans on a dated release, it belongs in dispatch.
-- Single wide PNG, no PDF, no schedule.
+- Single wide PNG, no PDF. Two per scheduled run (Thursday).
 - The caption format (💠 opener, one insight paragraph, `#PietroWorks #OpenToDisruption`) lives in `prompts/fluxogram-generation.md`; do not restate it elsewhere.
 - Keep everything you write free of em dashes.
 
