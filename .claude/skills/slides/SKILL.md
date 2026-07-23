@@ -12,7 +12,11 @@ LinkedIn document carousel. Read `MASTERPLAN.md` once for the system. Voice is g
 mapping by `prompts/slides-generation.md`. This file is the sequence and the data contracts.
 
 Slides are evergreen, not news. Cadence is Tuesday and Thursday (dispatch runs odd days).
-Set `DATE` to today in `YYYY-MM-DD`. All staging lives under `work/slides-<DATE>/`.
+Set `DATE` to today in `YYYY-MM-DD`. All staging lives under `work/slides-<DATE>-<slug>/`, where
+`<slug>` is the concept slug from Step 1. The slug is not decoration: staging keyed on the date
+alone lets a second deck on the same day overwrite the first deck's backgrounds in a shared
+folder. Two decks in one day is exactly how deck 007's raw art was lost. Slug-scope the folder
+and that can never happen.
 
 ## Step 1 — Scan and curate
 
@@ -34,7 +38,7 @@ card (two for any C card), and the post caption. The output has three keys: `dec
 
 ## Step 3 — Stage
 
-Under `work/slides-<DATE>/` write:
+Under `work/slides-<DATE>-<slug>/` write:
 
 - `slides.json` — the `deck` object: `{ topic, slides:[...] }`.
 - `prompts.json` — the `prompts` array `[{ id, image_prompt }]` (C contributes `<id>a` and `<id>b`).
@@ -43,11 +47,11 @@ Under `work/slides-<DATE>/` write:
 
 ## Step 4 — Images
 
-Run `node pipeline/generate-images.mjs --in work/slides-<DATE>/prompts.json --out work/slides-<DATE>/backgrounds`. Writes `bg-<id>.png` at 1080 for each prompt. Requires `OPENAI_API_KEY` (in `~/.zshenv` so non-interactive scheduled shells see it). Same `gpt-image-2` model and warm-accent look as dispatch. If one image is blocked, rephrase that prompt and retry.
+Run `node pipeline/generate-images.mjs --in work/slides-<DATE>-<slug>/prompts.json --out work/slides-<DATE>-<slug>/backgrounds`. Writes `bg-<id>.png` at 1080 for each prompt. Requires `OPENAI_API_KEY` (in `~/.zshenv` so non-interactive scheduled shells see it). Same `gpt-image-2` model and warm-accent look as dispatch. If one image is blocked, rephrase that prompt and retry.
 
 ## Step 5 — Render and stitch
 
-Run `node renderer/slides.mjs --deck work/slides-<DATE>/slides.json --root work/slides-<DATE> --out work/slides-<DATE>/slides --pdf work/slides-<DATE>/slides.pdf --check-fit`. It renders each card to `post-<id>.png` at 2160 (validated), then stitches a square 1080-per-page PDF (`slides.pdf`) via the same headless Chrome. Runs locally against installed Google Chrome.
+Run `node renderer/slides.mjs --deck work/slides-<DATE>-<slug>/slides.json --root work/slides-<DATE>-<slug> --out work/slides-<DATE>-<slug>/slides --pdf work/slides-<DATE>-<slug>/slides.pdf --check-fit`. It renders each card to `post-<id>.png` at 2160 (validated), then stitches a square 1080-per-page PDF (`slides.pdf`) via the same headless Chrome. Runs locally against installed Google Chrome.
 
 `--check-fit` turns the disposition rule into a measured gate: after each card it reads `measureSlideFit()` from the template and prints `[fit ok|FAIL] hl=<n>L t=<n>L`, where `hl` is the visual lines the gradient accent crosses and `t` is the tallest title/hero. It writes every PNG and the PDF first, so a fail never aborts the batch, then exits non-zero if any card broke the rule. Read the fit lines in Step 6.
 
@@ -78,7 +82,9 @@ keep its trailing period inside the `hl` so the gradient carries the period; a p
 hanging off the accent is the tell it was left out. Fix it before upload, not after.
 
 Build the Drive folder `pietro-works-env/queue/Pietro Slides/<DATE>-<slug>/`: the `post-*.png` slides, `slides.pdf`
-(the LinkedIn document to upload), `caption.txt`, and `meta.json`. When Drive for Desktop is
+(the LinkedIn document to upload), `caption.txt`, `meta.json`, and the raw `bg-*.png` from
+`work/slides-<DATE>-<slug>/backgrounds/` (copy them flat into the folder). The backgrounds are
+required by the contract: they are the only re-render source and exist nowhere else. When Drive for Desktop is
 mounted, assemble directly on the mount at `<My Drive>/pietro-works-env/queue/Pietro Slides/` and let it sync; do not
 push PNGs through the connector. Strip any `.DS_Store` before finishing.
 
@@ -88,11 +94,11 @@ Before the first upload of a session that writes to Drive, confirm with Pietro. 
 
 ## Files and the archive (three homes, one job each)
 
-- **`work/slides-<DATE>/` in this repo is staging only.** It organizes background generation and rendering: `slides.json`, `prompts.json`, `backgrounds/`, `slides/` (the rendered `post-*.png`), `slides.pdf`, `caption.txt`, `meta.json`. Scratch. Nothing here is the finished deck.
+- **`work/slides-<DATE>-<slug>/` in this repo is staging only.** It organizes background generation and rendering: `slides.json`, `prompts.json`, `backgrounds/`, `slides/` (the rendered `post-*.png`), `slides.pdf`, `caption.txt`, `meta.json`. Scratch. Nothing here is the finished deck.
 - **`pietro-works-env/queue/Pietro Slides/<DATE>-<slug>/` is the structured delivery.** Studio scans, schedules, and posts the PDF from here. It must match the contract (Step 6).
-- **`pietro-works-env/dispatch-posts/` is the flat unified archive, the final store.** `archive-to-dispatch-posts.mjs` copies the deck here as `slides-NNN.pdf`, `slides-NNN.png` (the cover, `post-01`), and `caption-slides-NNN.txt`. This is what Pietro browses and references by number ("slides-004"). The individual pages live only inside the PDF; the archive keeps the PDF, the cover, and the caption.
+- **`pietro-works-env/dispatch-posts/` is the flat unified archive, the final store.** `archive-to-dispatch-posts.mjs` copies the deck here as `slides-NNN.pdf`, `slides-NNN.png` (the cover, `post-01`), `caption-slides-NNN.txt`, and the raw `bg-slides-NNN-<id>.png`. This is what Pietro browses and references by number ("slides-004"). The individual pages live only inside the PDF, but the raw backgrounds are now archived so the deck is always re-renderable.
 
-**Re-rendering or fixing a deck that is already archived.** The archive script only ever assigns the NEXT free `NNN`, so re-running it makes a duplicate, not an update. To update an existing deck (an edited slide, a re-render), do not re-run the script: find its existing `NNN` (match the caption or the cover image), then overwrite the same `dispatch-posts/slides-NNN.pdf` (and `slides-NNN.png` if the cover changed) directly with the new render. Always update BOTH places, the `queue/` folder Studio posts from AND the matching `dispatch-posts/NNN` entry, or the two silently drift.
+**Re-rendering or fixing a deck that is already archived.** The archive is now idempotent: on first archive it stamps the assigned `NNN` into the delivery `meta.json` (`"number"`), and re-running the script on the same folder reuses that number and overwrites `dispatch-posts/slides-NNN.*` in place instead of minting a duplicate. So the safe update path is: fix the deck in its `queue/` folder, then re-run `archive-to-dispatch-posts.mjs` on it. Both homes stay in sync because the number is pinned in meta.
 
 ## Notes
 
@@ -101,7 +107,7 @@ Before the first upload of a session that writes to Drive, confirm with Pietro. 
 - The caption is the post text; the slides carry the teaching, the PDF is the carousel.
 - A slide deck must be evergreen. If it leans on a dated release, it belongs in dispatch.
 - LinkedIn document best practice: square pages, keep the deck tight (3 to 5 slides), PDF.
-- On a re-run for the same date and slug, archive existing `post-*`/`slides.pdf` as `*_old` first.
+- Re-running images is safe: `generate-images.mjs` preserves any existing `bg-<id>.png` as `bg-<id>.old-<stamp>.png` before rewrite (pass `--force` to overwrite in place). You no longer hand-copy `*_old` first.
 - Keep everything you write free of em dashes.
 
 ## Enterprise

@@ -38,7 +38,7 @@ Then eyeball both banners: headline breaks clean, the accent phrase reads, the l
 Build `pietro-works-env/queue/Pietro Articles/<DATE>-<slug>/` on the Drive mount:
 
 - `banner-1.png`, `banner-2.png` — the two covers, 1920x1080.
-- `bg-1.png`, `bg-2.png` — the raw backgrounds (optional but keep them).
+- `bg-1.png`, `bg-2.png` — the raw backgrounds, required. They are the only re-render source and live nowhere else once staging is gone; the archive copies them as `bg-article-NNN`.
 - `meta.json` — from staging.
 - `caption.txt` — optional: the share-post text if Pietro asked for one, per the DISPATCH voice.
 

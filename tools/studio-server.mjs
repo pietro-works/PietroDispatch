@@ -24,6 +24,8 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { loadSlots, loadCalendar, zonedLocalToUtcIso } from './slot-engine.mjs';
 import { buildDashboard } from './dashboard-data.mjs';
+import { claimIndex, releaseIndex } from '../pipeline/archive-to-dispatch-posts.mjs';
+import { writeJsonAtomic } from './atomic-json.mjs';
 
 const TOOLS_DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(TOOLS_DIR, '..');
@@ -57,20 +59,14 @@ const RENDER_KINDS = {
   tutorial:  { prefix: 'tutorial',     ext: 'png' },
 };
 let renderBusy = false;
-async function nextName(prefix) {
-  await mkdir(ARCHIVE_DIR, { recursive: true });
-  const re = new RegExp(`^${prefix}-(\\d+)(?:-b)?\\.`);
-  let max = 0, width = 3;
-  for (const f of await readdir(ARCHIVE_DIR)) {
-    const m = f.match(re);
-    if (m) { max = Math.max(max, Number(m[1])); width = Math.max(width, m[1].length); }
-  }
-  return `${prefix}-${String(max + 1).padStart(width, '0')}`;
-}
+// PACS0003 — numbering is claimed through the archive script's single authority (claimIndex),
+// not a second local scan-max, so a Studio render and a CLI archive can't mint the same NNN.
 async function renderKind(kind, spec) {
   const k = RENDER_KINDS[kind];
   if (!k) throw new Error('unsupported kind — news and article render through the pipeline');
-  const name = await nextName(k.prefix);
+  const { nnn, lock } = await claimIndex(ARCHIVE_DIR, k.prefix);
+  const name = `${k.prefix}-${nnn}`;
+  try {
   const tmp = await mkdtemp(join(tmpdir(), 'pw-render-'));
   const specPath = join(tmp, 'spec.json');
   await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
@@ -98,11 +94,14 @@ async function renderKind(kind, spec) {
     code = await runOne([join(R, 'slides.mjs'), '--deck', specPath, '--root', tmp, '--out', outDir, '--pdf', pdf]);
     if (code === 0) {
       files.push(`${name}.pdf`);
-      await copyFile(join(outDir, 'post-01.png'), join(ARCHIVE_DIR, `${name}.png`)).then(() => files.push(`${name}.png`)).catch(() => {});
+      // cover = the FIRST slide in the deck (the top-left card in the editor), not a hardcoded id
+      const coverId = (spec.slides && spec.slides[0] && spec.slides[0].id) || '01';
+      await copyFile(join(outDir, `post-${coverId}.png`), join(ARCHIVE_DIR, `${name}.png`)).then(() => files.push(`${name}.png`)).catch(() => {});
     }
   }
   if (code === 0) { await copyFile(specPath, join(ARCHIVE_DIR, `${name}.json`)); files.push(`${name}.json`); }
   return { ok: code === 0, name, files, log: log.slice(-4000) };
+  } finally { await releaseIndex(lock); }
 }
 
 function pad2(n) { return String(n).padStart(2, '0'); }
@@ -178,7 +177,7 @@ const server = createServer(async (req, res) => {
     if (path === '/api/plan' && req.method === 'POST') {
       const body = await readBody(req);
       const { rows, rejected } = await buildPlanRows(body.placements);
-      await writeFile(PLAN_PATH, `${JSON.stringify(rows, null, 2)}\n`);
+      await writeJsonAtomic(PLAN_PATH, rows);
       return send(res, 200, { ok: true, saved: rows.length, rejected });
     }
 
@@ -187,7 +186,7 @@ const server = createServer(async (req, res) => {
       const body = await readBody(req);
       const { rows, rejected } = await buildPlanRows(body.placements);
       if (!rows.length) return send(res, 400, { error: 'nothing schedulable in the plan', rejected });
-      await writeFile(PLAN_PATH, `${JSON.stringify(rows, null, 2)}\n`);
+      await writeJsonAtomic(PLAN_PATH, rows);
       run.log = ''; run.exitCode = null; run.startedAt = new Date().toISOString();
       run.proc = spawn(process.execPath, [join(TOOLS_DIR, 'publish.mjs'), 'apply-plan', '--plan', PLAN_PATH], { cwd: ROOT });
       const eat = (c) => { run.log += c.toString(); if (run.log.length > 200000) run.log = run.log.slice(-100000); };

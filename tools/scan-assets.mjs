@@ -16,6 +16,7 @@
  */
 import { mkdir, readdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
+import { writeJsonAtomic } from './atomic-json.mjs';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -90,11 +91,16 @@ async function scanSlides(drive, assets) {
     const date = deck.slice(0, 10);
     const slug = deck.slice(11);
     const id = `slides:${deck}`;
+    // meta.number is the deck's dispatch-posts sequence (written at archive time); it becomes the
+    // LinkedIn document title "Pietro.works IN_THE_LOOP.MD #NNN".
+    let meta = {};
+    try { meta = JSON.parse(await readFile(join(deckDir, 'meta.json'), 'utf8')); } catch {}
+    const num = meta.number != null ? String(meta.number).padStart(3, '0') : '';
     let thumb_rel = '';
     if (await exists(cover)) { try { thumb_rel = await makeThumb(cover, id); } catch (e) { console.error(`thumb failed ${id}: ${e.message}`); } }
     assets.push({
-      asset_id: id, type: 'slides', kind: 'document', date, slug, variation: 1,
-      title: titleFromSlug(slug),
+      asset_id: id, type: 'slides', kind: 'document', date, slug, variation: 1, number: num,
+      title: num ? `Pietro.works IN_THE_LOOP.MD #${num}` : titleFromSlug(slug),
       caption: await readText(cap), media_path: pdf,
       cover_path: await exists(cover) ? cover : '', thumb_rel,
     });
@@ -191,7 +197,7 @@ async function main() {
   await scanFluxograms(drive, assets);
   await scanTutorials(drive, assets);
   assets.sort((a, b) => (b.date.localeCompare(a.date)) || a.asset_id.localeCompare(b.asset_id));
-  await writeFile(ASSETS_PATH, `${JSON.stringify(assets, null, 2)}\n`);
+  await writeJsonAtomic(ASSETS_PATH, assets);
   const byType = assets.reduce((m, a) => ((m[a.type] = (m[a.type] || 0) + 1), m), {});
   console.log(`wrote ${assets.length} assets -> ${ASSETS_PATH}`);
   console.log(`by type: ${JSON.stringify(byType)}`);

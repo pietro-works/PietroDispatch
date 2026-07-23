@@ -20,7 +20,7 @@
  *     <delivery-folder> = a news candidate-NN-slug/ dir, a slides or article <date>-slug/ dir, or a tutorial png's folder.
  *   Type is auto-detected from the folder contents when not given.
  */
-import { readdir, readFile, copyFile, mkdir, stat } from 'node:fs/promises';
+import { readdir, readFile, writeFile, copyFile, mkdir, stat, open, rm } from 'node:fs/promises';
 import { join, basename, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -56,21 +56,45 @@ async function detectType(folder) {
   throw new Error(`cannot detect asset type in ${folder}`);
 }
 
-async function nextIndex(archive, prefix) {
-  await mkdir(archive, { recursive: true });
-  const files = await readdir(archive);
-  const re = new RegExp(`^${prefix}-(\\d{3})(?:-b)?\\.`);
-  let max = -1;
-  for (const f of files) { const m = f.match(re); if (m) max = Math.max(max, Number(m[1])); }
-  return max + 1;
-}
 const pad = (n) => String(n).padStart(3, '0');
+async function scanMax(archive, prefix) {
+  await mkdir(archive, { recursive: true });
+  const reFile = new RegExp(`^${prefix}-(\\d{3})(?:-b)?\\.`);
+  const reLock = new RegExp(`^\\.${prefix}-(\\d{3})\\.lock$`);
+  let max = -1;
+  for (const f of await readdir(archive)) { const m = f.match(reFile) || f.match(reLock); if (m) max = Math.max(max, Number(m[1])); }
+  return max;
+}
+// PACS0003 — dispatch-posts index numbers are claimed atomically. Two authorities mint them
+// (this script and studio-server's renderKind); each creates a `.<prefix>-NNN.lock` with O_EXCL
+// before taking NNN, so concurrent archivers can never pick the same number and overwrite each
+// other's post. The lock also counts toward the max, so a claim in flight is visible — AGENTS.md
+export async function claimIndex(archive, prefix) {
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
+    const nnn = pad(await scanMax(archive, prefix) + 1);
+    const lock = join(archive, `.${prefix}-${nnn}.lock`);
+    try { const fh = await open(lock, 'wx'); await fh.close(); return { nnn, lock }; }
+    catch (e) { if (e.code === 'EEXIST') continue; throw e; }
+  }
+  throw new Error(`could not claim a free ${prefix} index after 1000 attempts`);
+}
+export async function releaseIndex(lock) { if (lock) await rm(lock, { force: true }); }
 
 async function archiveOne(o) {
   const folder = resolve(o.folder);
   const type = o.type || await detectType(folder);
   const prefix = type === 'fluxo' ? 'pietro-fluxo' : type;
-  const nnn = pad(await nextIndex(o.archive, prefix));
+  // PACS0006 — idempotent archive: on first archive the assigned number is stamped into the
+  // delivery meta.json; a re-archive reuses it and overwrites <prefix>-NNN.* in place instead of
+  // minting a duplicate. scan-assets reads the same meta.number for the LinkedIn title — AGENTS.md
+  const metaPath = join(folder, 'meta.json');
+  let meta = null; try { meta = JSON.parse(await readFile(metaPath, 'utf8')); } catch {}
+  let nnn, lock = null;
+  const reusing = meta && meta.number != null;
+  if (reusing) nnn = pad(meta.number);
+  else if (o.dryRun) nnn = pad(await scanMax(o.archive, prefix) + 1);
+  else ({ nnn, lock } = await claimIndex(o.archive, prefix));
+  try {
   const plan = []; // [srcRel, destName]
 
   if (type === 'news') {
@@ -89,28 +113,43 @@ async function archiveOne(o) {
     if (await exists(join(folder, 'slides.pdf'))) plan.push(['slides.pdf', `slides-${nnn}.pdf`]);
     if (await exists(join(folder, 'post-01.png'))) plan.push(['post-01.png', `slides-${nnn}.png`]);
     if (await exists(join(folder, 'caption.txt'))) plan.push(['caption.txt', `caption-slides-${nnn}.txt`]);
+    // PACS0004 — deliver the raw card backgrounds so a deck stays re-renderable after staging is wiped
+    for (const f of await readdir(folder)) {
+      const m = f.match(/^bg-([\w-]+)\.png$/);
+      if (m) plan.push([f, `bg-slides-${nnn}-${m[1]}.png`]);
+    }
   } else if (type === 'tutorial') {
     const names = await readdir(folder);
     const png = names.find((n) => /^tutorial-\d+\.png$/.test(n)) || names.find((n) => /^post-01\.png$/.test(n)) || names.find((n) => n.endsWith('.png') && !n.startsWith('bg-'));
     const bg = names.find((n) => /^bg-/.test(n) && n.endsWith('.png'));
     if (png) plan.push([png, `tutorial-${nnn}.png`]);
     if (bg) plan.push([bg, `bg-tutorial-${nnn}.png`]);
+    if (names.includes('spec.json')) plan.push(['spec.json', `tutorial-${nnn}.json`]); // PACS0004 — keep the re-render spec
     if (names.includes('caption.txt')) plan.push(['caption.txt', `caption-tutorial-${nnn}.txt`]);
   } else if (type === 'fluxo') {
     if (await exists(join(folder, 'fluxogram.png'))) plan.push(['fluxogram.png', `pietro-fluxo-${nnn}.png`]);
     if (await exists(join(folder, 'spec.json'))) plan.push(['spec.json', `pietro-fluxo-${nnn}.json`]);
+    if (await exists(join(folder, 'bg.png'))) plan.push(['bg.png', `bg-pietro-fluxo-${nnn}.png`]); // PACS0004 — archive bg if the deck shipped one
     if (await exists(join(folder, 'caption.txt'))) plan.push(['caption.txt', `caption-pietro-fluxo-${nnn}.txt`]);
   } else throw new Error(`unknown type ${type}`);
 
   if (!plan.length) throw new Error(`nothing to archive from ${folder} (type ${type})`);
-  console.log(`${basename(folder)} -> ${prefix}-${nnn}`);
+  console.log(`${basename(folder)} -> ${prefix}-${nnn}${reusing ? ' (update in place)' : ''}`);
   for (const [src, dest] of plan) {
     console.log(`  ${src}  ->  ${dest}`);
     if (!o.dryRun) await copyFile(join(folder, src), join(o.archive, dest));
   }
-  return { type, prefix, nnn, count: plan.length };
+  // stamp the assigned number back so the next archive of this delivery updates in place
+  if (!o.dryRun && !reusing && meta) { meta.number = nnn; await writeFile(metaPath, `${JSON.stringify(meta, null, 2)}\n`); }
+  return { type, prefix, nnn, count: plan.length, reusing };
+  } finally {
+    await releaseIndex(lock);
+  }
 }
 
-const o = parseArgs();
-archiveOne(o).then((r) => console.log(o.dryRun ? '(dry-run, nothing written)' : `archived ${r.count} files as ${r.prefix}-${r.nnn}`))
-  .catch((e) => { console.error(e.message); process.exit(1); });
+// run the CLI only when invoked directly, so studio-server can import claimIndex/releaseIndex
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const o = parseArgs();
+  archiveOne(o).then((r) => console.log(o.dryRun ? '(dry-run, nothing written)' : `archived ${r.count} files as ${r.prefix}-${r.nnn}${r.reusing ? ' (updated in place)' : ''}`))
+    .catch((e) => { console.error(e.message); process.exit(1); });
+}

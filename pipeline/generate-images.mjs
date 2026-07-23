@@ -9,7 +9,9 @@
  * and crops 4px top and bottom to land on exactly 1920x1080, 16:9.
  *
  * Usage:
- *   node pipeline/generate-images.mjs --in work/<date>/prompts.json --out work/<date>/backgrounds [--format square|wide]
+ *   node pipeline/generate-images.mjs --in work/<date>/prompts.json --out work/<date>/backgrounds [--format square|wide] [--force]
+ *
+ * An existing bg-<id>.png is preserved as bg-<id>.old-<stamp>.png before rewrite; --force overwrites in place.
  *
  * prompts.json: [{ id, image_prompt }]
  * Requires OPENAI_API_KEY. Requires OpenAI Organization Verification on the
@@ -17,7 +19,7 @@
  *
  * deps: npm i openai sharp
  */
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, rename, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import OpenAI from 'openai';
 import sharp from 'sharp';
@@ -34,11 +36,12 @@ const FORMATS = {
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { in: null, out: null, format: 'square' };
+  const o = { in: null, out: null, format: 'square', force: false };
   for (let i = 0; i < a.length; i += 1) {
     if (a[i] === '--in') o.in = a[++i];
     else if (a[i] === '--out') o.out = a[++i];
     else if (a[i] === '--format') o.format = a[++i];
+    else if (a[i] === '--force') o.force = true;
     else throw new Error(`Unknown argument: ${a[i]}`);
   }
   if (!o.in || !o.out) throw new Error('Required: --in, --out');
@@ -47,6 +50,20 @@ function parseArgs() {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const exists = async (p) => { try { await stat(p); return true; } catch { return false; } };
+
+// PACS0004 — a raw generative source (bg-*.png) must never be silently overwritten: a second
+// run that lands on an existing bg snapshots it to bg-<id>.old-<stamp>.png first, so the only
+// non-reproducible artifact in the pipeline can never be lost to a same-folder rerun — AGENTS.md
+async function writeBg(out, buf, force) {
+  if (!force && await exists(out)) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '').replace('T', '-').slice(0, 15);
+    const bak = out.replace(/\.png$/, `.old-${stamp}.png`);
+    await rename(out, bak);
+    console.log(`existing ${out.split('/').pop()} preserved as ${bak.split('/').pop()}`);
+  }
+  await writeFile(out, buf);
+}
 
 async function generateOne(client, prompt, genSize) {
   let lastErr;
@@ -82,7 +99,7 @@ async function main() {
       .png()
       .toBuffer();
     const out = join(opts.out, `bg-${id}.png`);
-    await writeFile(out, cropped);
+    await writeBg(out, cropped, opts.force);
     console.log(`wrote bg-${id}.png`);
   }
 }
