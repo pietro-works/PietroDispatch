@@ -124,7 +124,11 @@ addEventListener('resize',fit);fit();
 const PH=['radial-gradient(70% 60% at 72% 30%, rgba(255,176,80,.5), transparent 55%),radial-gradient(90% 80% at 25% 75%, rgba(57,232,255,.35), transparent 60%),linear-gradient(150deg,#0a1626,#05080f)','radial-gradient(60% 55% at 30% 28%, rgba(168,85,247,.5), transparent 55%),radial-gradient(80% 70% at 80% 80%, rgba(0,255,153,.3), transparent 60%),linear-gradient(150deg,#0c1020,#05080f)','radial-gradient(70% 60% at 60% 40%, rgba(255,150,70,.55), transparent 55%),linear-gradient(150deg,#101622,#06080e)','radial-gradient(80% 70% at 70% 25%, rgba(57,232,255,.4), transparent 58%),radial-gradient(60% 60% at 20% 85%, rgba(255,176,80,.35), transparent 60%),linear-gradient(150deg,#0a1322,#05080f)'];
 function bgVal(b){ if(typeof b==='string'&&b) return "url('"+b+"')"; if(typeof b==='number') return PH[b%PH.length]; return PH[0]; }
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
-function withHL(t,hl){if(!hl)return esc(t);return esc(t).replace(esc(hl),'<span class="grad">'+esc(hl)+'</span>');}
+function withHL(t,hl){if(!hl)return esc(t);
+  // a line-ending accent phrase takes its trailing sentence punctuation into the gradient too,
+  // so "…the tab" + "." reads as one accented unit instead of a dim period hanging off the end.
+  var eh=esc(hl).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return esc(t).replace(new RegExp(eh+'[.!?…]*'),function(m){return '<span class="grad">'+m+'</span>';});}
 
 // renderSlide(slide, topic): the headless driver (slides.mjs) calls this per slide.
 // slide.bg = image url/dataURL (A/B/contact). slide.bgTop / slide.bgBot for C. Missing => placeholder.
@@ -159,6 +163,8 @@ function renderSlideInto(el, s, topic){
     h+='<div class="s-contact"><div class="nm">'+esc(s.name)+'</div><div class="role">'+esc(s.role)+'</div><div class="cta">'+esc(s.cta)+'</div></div>';
   }
   el.innerHTML=h;
+  // optional per-slide big-text size (like news headlineSize); default is the CSS 74px
+  if(s.titleSize) el.querySelectorAll('.s-title').forEach(function(t){t.style.fontSize=s.titleSize+'px';});
 }
 function renderSlide(s, topic){ renderSlideInto(document.getElementById('slide'), s, topic); }
 window.renderSlide=renderSlide;
@@ -234,11 +240,13 @@ window.measureFit = function(){
 };
 
 // standalone preview: load slides.json if present, else a built-in sample. ?card=N picks a slide.
+// slide[0] is the cover (post-01): the hero leads, the way real decks do. The `id` drives the
+// rendered filename post-<id>.png, so ids must run in the deck's reading order.
 const SAMPLE={topic:'IN_THE_LOOP.MD',slides:[
- {type:'A',bg:0,title:['Off data entry,','onto review.'],hl:'onto review.',steps:['Capture at the source','Route under tight rules','A human approves every record']},
- {type:'B',bg:1,hero:['The verifier,','not the typist.'],hl:'The verifier,',glyphs:['○','◆','◎'],glabel:'the human decides'},
- {type:'C',bg:2,before:'You type every entry.',after:'You approve every entry.',hl:'approve'},
- {type:'contact',bg:3,line:['Build the private tools','your team wishes existed.'],hl:'wishes existed.',name:'Pietro Impagliazzo',role:'AI Workflow Architect',cta:'Drop me a DM · amazing@pietro.works'}
+ {id:'01',type:'B',bg:0,hero:['The verifier,','not the typist.'],hl:'The verifier,',glyphs:['○','◆','◎'],glabel:'the human decides'},
+ {id:'02',type:'A',bg:1,title:['Off data entry,','onto review.'],hl:'onto review.',steps:['Capture at the source','Route under tight rules','A human approves every record']},
+ {id:'03',type:'C',bg:2,before:'You type every entry.',after:'You approve every entry.',hl:'approve'},
+ {id:'04',type:'contact',bg:3,line:['Build the private tools','your team wishes existed.'],hl:'wishes existed.',name:'Pietro Impagliazzo',role:'AI Workflow Architect',cta:'Drop me a DM · amazing@pietro.works'}
 ]};
 (async function(){
   let deck=SAMPLE;
@@ -430,6 +438,17 @@ const SAMPLE={topic:'IN_THE_LOOP.MD',slides:[
     } else {
       bgRow('background',function(){return typeof s.bg==='number'?s.bg:-1;},function(v){s.bg=v;},i);
     }
+    // big-text size — adjustable like the news headline, default 74px
+    var sr=row('text size');
+    var rng=document.createElement('input');rng.type='range';rng.min='40';rng.max='96';rng.step='1';
+    rng.value=String(s.titleSize||74);rng.style.flex='1';rng.style.minWidth='120px';
+    var val=document.createElement('span');val.className='sedp-lab';val.style.minWidth='44px';val.style.textAlign='right';
+    val.textContent=(s.titleSize?s.titleSize+'px':'74 auto');
+    rng.oninput=function(){s.titleSize=parseInt(rng.value,10);val.textContent=s.titleSize+'px';render(i);};
+    var auto=document.createElement('button');auto.type='button';auto.className='sedp-btn';auto.textContent='auto';
+    auto.title='clear the override, back to 74px';
+    auto.onclick=function(){delete s.titleSize;rng.value='74';val.textContent='74 auto';render(i);};
+    sr.appendChild(rng);sr.appendChild(val);sr.appendChild(auto);
     var r=row('accent');
     var inp=document.createElement('input');inp.type='text';inp.value=s.hl||'';inp.spellcheck=false;
     inp.placeholder='exact phrase to paint with the gradient';
