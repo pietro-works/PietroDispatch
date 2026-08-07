@@ -31,13 +31,15 @@ const OUT_SIDE = 2160;
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { cards: null, root: null, out: null, chrome: null, checkFit: false };
+  const o = { cards: null, root: null, out: null, chrome: null, checkFit: false, month: null, year: null };
   for (let i = 0; i < a.length; i += 1) {
     if (a[i] === '--cards') o.cards = a[++i];
     else if (a[i] === '--root') o.root = a[++i];
     else if (a[i] === '--out') o.out = a[++i];
     else if (a[i] === '--chrome') o.chrome = a[++i];
     else if (a[i] === '--check-fit') o.checkFit = true;
+    else if (a[i] === '--month') o.month = a[++i];
+    else if (a[i] === '--year') o.year = a[++i];
     else throw new Error(`Unknown argument: ${a[i]}`);
   }
   if (!o.cards || !o.root || !o.out) throw new Error('Required: --cards, --root, --out');
@@ -179,7 +181,24 @@ async function suppressEditorChrome(page) {
   });
 }
 
-async function newPage(cdp, url) {
+// news.html stamps the card's footer month/year from the RENDER machine's clock
+// (currentMonthLabel/currentYearLabel, once at init). That is right for a fresh run and
+// wrong for a re-render: re-shooting a past delivery to fix a defect would silently
+// restamp it with today's month. --month/--year pin the footer to the delivery's own
+// date. Applied after load, and the driver never calls the template's render(), which is
+// the only other place the footer is re-stamped.
+async function pinFooterDate(page, month, year) {
+  if (!month && !year) return;
+  const expr = `(()=>{
+    ${month ? `document.getElementById('src').textContent = ${JSON.stringify(month)};` : ''}
+    ${year ? `document.getElementById('date').textContent = ${JSON.stringify(year)};` : ''}
+    return document.getElementById('src').textContent + ' ' + document.getElementById('date').textContent;
+  })()`;
+  const r = await page('Runtime.evaluate', { expression: expr, returnByValue: true });
+  console.log(`footer pinned to: ${r.result.value}`);
+}
+
+async function newPage(cdp, url, opts = {}) {
   const { targetId } = await cdp.call('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await cdp.call('Target.attachToTarget', { targetId, flatten: true });
   const page = (m, p = {}) => cdp.call(m, p, sessionId);
@@ -191,6 +210,7 @@ async function newPage(cdp, url) {
   await suppressEditorChrome(page);
   // let the template's own loadTSV settle (it reads the header-only news.tsv) and fonts load
   await page('Runtime.evaluate', { expression: `(async()=>{await document.fonts.ready;await new Promise(r=>setTimeout(r,300));})()`, awaitPromise: true });
+  await pinFooterDate(page, opts.month, opts.year);
   return page;
 }
 
@@ -258,7 +278,7 @@ async function main() {
 
   let fitFails = 0;
   try {
-    const page = await newPage(cdp, url);
+    const page = await newPage(cdp, url, { month: opts.month, year: opts.year });
     for (const card of cards) {
       const bgBuf = await readFile(join(opts.root, card.bg));
       const dataUrl = `data:image/png;base64,${bgBuf.toString('base64')}`;
