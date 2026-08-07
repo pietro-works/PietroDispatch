@@ -160,6 +160,25 @@ async function launchChrome(bin) {
   return { proc, userDataDir, wsUrl: ver.webSocketDebuggerUrl };
 }
 
+// PACS0008 — news.html doubles as an in-browser editor. Its `.dock` is static markup
+// (not built by the headless-gated editor IIFE), fixed to the viewport bottom and parked
+// at translateY(calc(100% - 14px)), so a 14px sliver of it (the top hairline and the
+// grab-handle pill) sits inside the viewport and paints into the element-clip capture.
+// The editor JS is headless-gated; this CSS is not, so the render path neutralizes it.
+// Injected once per page, before any card is shot.
+async function suppressEditorChrome(page) {
+  await page('Runtime.evaluate', {
+    expression: `(()=>{
+      const s = document.createElement('style');
+      s.id = 'render-no-editor-chrome';
+      s.textContent = '.dock{display:none!important}';
+      document.head.appendChild(s);
+      return !!document.getElementById('render-no-editor-chrome');
+    })()`,
+    returnByValue: true,
+  });
+}
+
 async function newPage(cdp, url) {
   const { targetId } = await cdp.call('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await cdp.call('Target.attachToTarget', { targetId, flatten: true });
@@ -169,6 +188,7 @@ async function newPage(cdp, url) {
   const load = cdp.once('Page.loadEventFired', sessionId);
   await page('Page.navigate', { url });
   await load;
+  await suppressEditorChrome(page);
   // let the template's own loadTSV settle (it reads the header-only news.tsv) and fonts load
   await page('Runtime.evaluate', { expression: `(async()=>{await document.fonts.ready;await new Promise(r=>setTimeout(r,300));})()`, awaitPromise: true });
   return page;
