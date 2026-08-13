@@ -54,7 +54,7 @@ const exists = async (p) => { try { await stat(p); return true; } catch { return
 
 // PACS0004 — a raw generative source (bg-*.png) must never be silently overwritten: a second
 // run that lands on an existing bg snapshots it to bg-<id>.old-<stamp>.png first, so the only
-// non-reproducible artifact in the pipeline can never be lost to a same-folder rerun — AGENTS.md
+// non-reproducible artifact in the pipeline can never be lost to a same-folder rerun — AGENTS.md (known sites, not exhaustive)
 async function writeBg(out, buf, force) {
   if (!force && await exists(out)) {
     const stamp = new Date().toISOString().replace(/[:.]/g, '').replace('T', '-').slice(0, 15);

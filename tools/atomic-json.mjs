@@ -1,7 +1,7 @@
 /**
  * atomic-json.mjs — write JSON so a reader never sees a half-written file.
  * PACS0005 — shared DB state (plan.json, assets.json) is written tmp+rename, never in place,
- * so a concurrent Studio/scan/publish reader can't catch a truncated file — AGENTS.md
+ * so a concurrent Studio/scan/publish reader can't catch a truncated file — AGENTS.md (known sites, not exhaustive)
  */
 import { writeFile, rename, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';

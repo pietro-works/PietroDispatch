@@ -167,7 +167,7 @@ async function launchChrome(bin) {
 // at translateY(calc(100% - 14px)), so a 14px sliver of it (the top hairline and the
 // grab-handle pill) sits inside the viewport and paints into the element-clip capture.
 // The editor JS is headless-gated; this CSS is not, so the render path neutralizes it.
-// Injected once per page, before any card is shot.
+// Injected once per page, before any card is shot. — AGENTS.md (known sites, not exhaustive)
 async function suppressEditorChrome(page) {
   await page('Runtime.evaluate', {
     expression: `(()=>{

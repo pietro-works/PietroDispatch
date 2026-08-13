@@ -44,11 +44,11 @@ function parseArgs() {
 const exists = async (p) => { try { await stat(p); return true; } catch { return false; } };
 
 // PACS0001 — every delivery type must be wired in all five places: contract doc,
-// validate-contract.mjs, scan-assets.mjs, this detectType, modules.json — AGENTS.md
+// validate-contract.mjs, scan-assets.mjs, this detectType, modules.json — AGENTS.md (known sites, not exhaustive)
 async function detectType(folder) {
   const names = await readdir(folder);
   if (names.includes('spec.json') && names.includes('fluxogram.png')) return 'fluxo';
-  if (names.includes('tutorial.png')) return 'tutorial';   // PACS0001 — tutorial folder marker
+  if (names.includes('tutorial.png')) return 'tutorial';   // PACS0001 — tutorial folder marker — AGENTS.md (known sites, not exhaustive)
   if (names.includes('slides.pdf')) return 'slides';
   if (names.some((n) => /^banner-[12]\.png$/.test(n))) return 'article';
   if (names.some((n) => /^post-[12]\.png$/.test(n))) return 'news';
@@ -68,7 +68,7 @@ async function scanMax(archive, prefix) {
 // PACS0003 — dispatch-posts index numbers are claimed atomically. Two authorities mint them
 // (this script and studio-server's renderKind); each creates a `.<prefix>-NNN.lock` with O_EXCL
 // before taking NNN, so concurrent archivers can never pick the same number and overwrite each
-// other's post. The lock also counts toward the max, so a claim in flight is visible — AGENTS.md
+// other's post. The lock also counts toward the max, so a claim in flight is visible — AGENTS.md (known sites, not exhaustive)
 export async function claimIndex(archive, prefix) {
   for (let attempt = 0; attempt < 1000; attempt += 1) {
     const nnn = pad(await scanMax(archive, prefix) + 1);
@@ -86,7 +86,7 @@ async function archiveOne(o) {
   const prefix = type === 'fluxo' ? 'pietro-fluxo' : type;
   // PACS0006 — idempotent archive: on first archive the assigned number is stamped into the
   // delivery meta.json; a re-archive reuses it and overwrites <prefix>-NNN.* in place instead of
-  // minting a duplicate. scan-assets reads the same meta.number for the LinkedIn title — AGENTS.md
+  // minting a duplicate. scan-assets reads the same meta.number for the LinkedIn title — AGENTS.md (known sites, not exhaustive)
   const metaPath = join(folder, 'meta.json');
   let meta = null; try { meta = JSON.parse(await readFile(metaPath, 'utf8')); } catch {}
   let nnn, lock = null;
@@ -113,7 +113,7 @@ async function archiveOne(o) {
     if (await exists(join(folder, 'slides.pdf'))) plan.push(['slides.pdf', `slides-${nnn}.pdf`]);
     if (await exists(join(folder, 'post-01.png'))) plan.push(['post-01.png', `slides-${nnn}.png`]);
     if (await exists(join(folder, 'caption.txt'))) plan.push(['caption.txt', `caption-slides-${nnn}.txt`]);
-    // PACS0004 — deliver the raw card backgrounds so a deck stays re-renderable after staging is wiped
+    // PACS0004 — deliver the raw card backgrounds so a deck stays re-renderable — AGENTS.md (known sites, not exhaustive)
     for (const f of await readdir(folder)) {
       const m = f.match(/^bg-([\w-]+)\.png$/);
       if (m) plan.push([f, `bg-slides-${nnn}-${m[1]}.png`]);
@@ -124,12 +124,12 @@ async function archiveOne(o) {
     const bg = names.find((n) => /^bg-/.test(n) && n.endsWith('.png'));
     if (png) plan.push([png, `tutorial-${nnn}.png`]);
     if (bg) plan.push([bg, `bg-tutorial-${nnn}.png`]);
-    if (names.includes('spec.json')) plan.push(['spec.json', `tutorial-${nnn}.json`]); // PACS0004 — keep the re-render spec
+    if (names.includes('spec.json')) plan.push(['spec.json', `tutorial-${nnn}.json`]); // PACS0004 — keep the re-render spec — AGENTS.md (known sites, not exhaustive)
     if (names.includes('caption.txt')) plan.push(['caption.txt', `caption-tutorial-${nnn}.txt`]);
   } else if (type === 'fluxo') {
     if (await exists(join(folder, 'fluxogram.png'))) plan.push(['fluxogram.png', `pietro-fluxo-${nnn}.png`]);
     if (await exists(join(folder, 'spec.json'))) plan.push(['spec.json', `pietro-fluxo-${nnn}.json`]);
-    if (await exists(join(folder, 'bg.png'))) plan.push(['bg.png', `bg-pietro-fluxo-${nnn}.png`]); // PACS0004 — archive bg if the deck shipped one
+    if (await exists(join(folder, 'bg.png'))) plan.push(['bg.png', `bg-pietro-fluxo-${nnn}.png`]); // PACS0004 — archive bg if the deck shipped one — AGENTS.md (known sites, not exhaustive)
     if (await exists(join(folder, 'caption.txt'))) plan.push(['caption.txt', `caption-pietro-fluxo-${nnn}.txt`]);
   } else throw new Error(`unknown type ${type}`);
 

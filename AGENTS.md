@@ -1,17 +1,110 @@
 # AGENTS.md — pietro-dispatch
 
-Agent-facing index for this repo. Product docs live in `MASTERPLAN.md`; per-module sequences in `.claude/skills/*/SKILL.md`; artifact specs in `prompts/`. This file holds the PACS registry: the load-bearing couplings where one edit forces a matching edit somewhere non-obvious and missing it fails silently.
+Agent-facing index for this repo. Product docs live in `MASTERPLAN.md`; per-module sequences in `.claude/skills/*/SKILL.md`; artifact specs in `prompts/`. This file holds the PACS registry: the load-bearing couplings where one edit forces a matching edit somewhere non-obvious and missing it fails silently. Protocol: [PACS SPEC.md](../PACS/SPEC.md).
+
+> **Output signal — read this.** Whenever you consult this registry while producing a response, put `P.A.C.S ✅` on its own line at the very top of that response, before anything else. Only print it when you genuinely consulted the registry for that output; a checkmark you did not earn makes the signal a lie.
+
+> **`sync_with` is a floor, not a ceiling.** Every entry below lists the touch-points somebody already found. It is not the complete set. Before you finish a change, grep for the sites the entry does not name, and when you find one, add it to that entry in the same change. An entry that names four sites does not mean there are only four.
 
 ## PACS Registry
 
-| Code | Rule | Anchors | Failure if missed |
-|------|------|---------|-------------------|
-| PACS0001 | Every delivery type (news, slides, article, fluxogram, tutorial) must be wired in all five places at once: its contract doc in `../pietro-enterprise/registry/contracts/`, `validate-contract.mjs` (classification + checks), Studio's `tools/scan-assets.mjs` (this repo) (a scan function), `pipeline/archive-to-dispatch-posts.mjs` (`detectType` + copy plan), and `../pietro-enterprise/registry/modules.json`. Tutorial is fully wired as of 2026-07-21 (marker `tutorial.png`, contract `tutorial.contract.md`, classifier + scanner + detectType sniffs, modules.json row). Note: slides, article, fluxogram, and tutorial folders share the `<DATE>-<slug>` name and are told apart by contents (`slides.pdf` for slides, `banner-1.png` for article, `fluxogram.png` for fluxogram, `tutorial.png` for tutorial); any new type reusing that name shape must extend the content sniff in BOTH validate-contract.mjs and detectType. | `pipeline/archive-to-dispatch-posts.mjs` `detectType` (tagged); `validate-contract.mjs` `main()` classifier (tagged); `scan-assets.mjs` `main()` scan dispatch (tagged); `modules.json` registry-only coverage (JSON, no comments) | Studio silently skips the delivery, or the validator misclassifies it and fails it against the wrong contract; nothing errors, the asset just never enters the queue |
-| PACS0002 | `renderer/fluxogram.html` is BOTH the headless render template (fluxogram.mjs screenshots `#diagram`) AND a standalone in-browser editor. The editor IIFE must stay a no-op on every render path: the `HEADLESS` gate returns before any editor DOM is built when `?headless` is set, `window.__FLUXO` is present, `navigator.webdriver` is true, or the UA is HeadlessChrome. All editor chrome (`#ed-*`, `body.ed-on`) lives OUTSIDE `#diagram`; `#diagram` is only ever restyled by `renderFluxo`, never given editor borders/handles. Keep `renderFluxo`, the `G` glyph map, and `DEFAULT` behavior-identical for a given spec (the optional `arr`/`arrColor` connector fields default to the original output when absent). If you widen the gate, add a render entrypoint, or move `#diagram`, re-verify the default `fluxogram.mjs` render is byte-identical. | `renderer/fluxogram.html` editor IIFE `var HEADLESS` (tagged); `renderFluxo` arr/arrColor handling (untagged, same file) | fluxogram.mjs screenshots editor chrome or a shifted `#diagram`, or a render-path regression in renderFluxo changes every delivered PNG; nothing errors, the asset just ships wrong |
-| PACS0003 | Every module's staging dir MUST be unique per deliverable — `work/<module>-<DATE>-<slug>/`, never date-only. Two deliverables on one calendar day share a date-only folder, and the second run's `generate-images` writes the same positional `bg-<id>.png` filenames over the first's. AND: dispatch-posts index numbers (`<prefix>-NNN`) are minted by TWO authorities (`archive-to-dispatch-posts.mjs` and `studio-server.mjs` `renderKind`); both must claim through the shared `claimIndex` (O_EXCL `.lock`), never a private scan-max, or two runs pick the same NNN and overwrite. | `.claude/skills/slides/SKILL.md` staging line, `.claude/skills/dispatch/SKILL.md` staging line; `pipeline/archive-to-dispatch-posts.mjs` `claimIndex` (tagged); `tools/studio-server.mjs` `renderKind` (tagged) | A same-day second deck silently overwrites the first's raw backgrounds (irrecoverable), or two archivers overwrite each other's numbered post; nothing errors |
-| PACS0004 | A raw generative source (a `bg-*.png`, or a fluxogram/tutorial render spec) must have a NON-ephemeral home: it is delivered into the queue folder AND archived into dispatch-posts. It must never live only in staging, because GPT Image 2 cannot reproduce a background identically. Enforced in four coupled places per type: the contract shape+checklist, `validate-contract.mjs` (slides/news assert bg presence), the module SKILL delivery step (copy bg into the queue folder), and the `archive-to-dispatch-posts.mjs` copy plan (`bg-slides-NNN-*`, `bg-article-NNN`, `bg-news-NNN`, tutorial `spec.json`). Also: `generate-images.mjs` `writeBg` snapshots an existing bg to `bg-<id>.old-<stamp>.png` before rewrite (`--force` to skip). | `pipeline/generate-images.mjs` `writeBg` (tagged); `pipeline/archive-to-dispatch-posts.mjs` slides bg copy (tagged); `validate-contract.mjs` `checkSlidesDeck`/`checkNewsCandidate` (tagged); each contract doc + module SKILL delivery step | A deck's raw art is lost the moment staging is reused or wiped, and the deck can never be re-rendered; discovered only when someone tries |
-| PACS0006 | The archive is idempotent by a stable key: on first archive the assigned number is stamped into the delivery `meta.json` (`"number"`); a re-archive reuses it and overwrites `<prefix>-NNN.*` in place instead of minting a duplicate. `scan-assets.mjs` reads the SAME `meta.number` to build the LinkedIn document title `Pietro.works IN_THE_LOOP.MD #NNN`. Producer (archive write-back) and consumer (scan-assets read) must stay in sync. | `pipeline/archive-to-dispatch-posts.mjs` `archiveOne` meta write-back (tagged); `tools/scan-assets.mjs` `scanSlides` meta.number read | Re-archiving duplicates a post under a new number, or the slides title loses its `#NNN`; nothing errors |
-| PACS0008 | Editor chrome that is STATIC markup must be suppressed by the render driver, because the headless JS gate cannot reach it. `news.html` and `article.html` carry `.dock` as static `<body>` markup (unlike `slides.html` `#sed-bar` and `fluxogram.html` `#ed-bar`, which the headless-gated editor IIFE builds and therefore never exist on a render). `.dock` is `position:fixed;bottom:0` parked at `transform:translateY(calc(100% - 14px))`, so a 14px sliver stays inside the viewport; a `Page.captureScreenshot` clipped to `#news`/`#banner` paints whatever overlays that rect, so the sliver's `border-top` hairline and the `::before` grab-handle pill land in the delivered card. Both drivers call `suppressEditorChrome()` right after load, before any shot. If you change the `.dock` transform, add editor chrome as static markup, or add a new render driver for either template, keep the suppression in step. Verify by measuring: the bottom 28 device rows of a 2160 news card must show no full-width hairline and no bright centered pill. | `renderer/news.mjs` `suppressEditorChrome` (tagged); `renderer/article.mjs` `suppressEditorChrome` (tagged); `renderer/news.html` `.dock` transform (untagged); `renderer/article.html` `.dock` transform (untagged) | Every delivered card carries a pale bar across its bottom edge; the render succeeds, the dimensions validate, both gates pass on shape, and the defect ships. It did: news-038 through news-049 were delivered with the bar after the 2026-07-22 studio-uniform pass changed the transform from `translateY(100%)` |
-| PACS0005 / PACS0007 | Shared DB state is written safely: `db/plan.json` and `db/assets.json` go through `writeJsonAtomic` (tmp+rename) so a concurrent reader never catches a truncated file (PACS0005); and only one publisher writes `db/calendar.json` at a time — the LinkedIn schedule loop holds an exclusive `calendar.json.lock` and re-reads the calendar before each post so a CLI `publish` and a Studio `apply-plan` cannot interleave writes or double-post (PACS0007). | `tools/atomic-json.mjs` `writeJsonAtomic` (tagged); `tools/studio-server.mjs` `/api/plan`+`/api/schedule`; `tools/scan-assets.mjs` `main`; `tools/publish.mjs` `withCalendarLock` (tagged) | A truncated plan/assets read, or two publishers clobber the calendar / double-schedule an asset on LinkedIn; nothing errors |
+```yaml
+PACS0001:
+  anchor: "pipeline/archive-to-dispatch-posts.mjs:detectType"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "tools/scan-assets.mjs"
+    - "../pietro-enterprise/registry/contracts/validate-contract.mjs"
+    - "../pietro-enterprise/registry/modules.json"
+    - "../pietro-enterprise/registry/contracts/news.contract.md"
+    - "../pietro-enterprise/registry/contracts/slides.contract.md"
+    - "../pietro-enterprise/registry/contracts/article.contract.md"
+    - "../pietro-enterprise/registry/contracts/fluxogram.contract.md"
+    - "../pietro-enterprise/registry/contracts/tutorial.contract.md"
+  fails_silently: "Studio's scanner skips the delivery, or the validator classifies it as the wrong type and fails it against another type's contract; the asset never enters the queue and nothing errors"
+  justification: "five independent sites key off the same delivery type and none is derived from the others, so a type wired into four of them looks finished while its assets silently never reach the queue"
+  kind: "registry"
+  notes: "slides, article, fluxogram and tutorial folders all share the <DATE>-<slug> name and are told apart only by contents (slides.pdf, banner-1.png, fluxogram.png, tutorial.png). Any new type on that name shape must extend the content sniff in BOTH validate-contract.mjs and detectType. Tutorial fully wired 2026-07-21."
 
-Numbering: 0001-0099 code-enforced invariants (carry a `// PACS####` tag at the anchor), 0100+ process rules. Append-only; never reuse or renumber. Full protocol in the user-level standing instructions (PACS section).
+PACS0002:
+  anchor: "renderer/fluxogram.html:HEADLESS"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "renderer/fluxogram.mjs"
+  fails_silently: "fluxogram.mjs screenshots editor chrome or a shifted #diagram, or a renderFluxo change silently alters every delivered PNG"
+  justification: "one file is both the screenshot surface and an interactive editor, so any editor DOM that escapes the headless gate is painted into every delivered fluxogram"
+  kind: "determinism"
+  notes: "The gate returns before any editor DOM is built when ?headless is set, window.__FLUXO is present, navigator.webdriver is true, or the UA is HeadlessChrome. Editor chrome (#ed-*, body.ed-on) must stay OUTSIDE #diagram. Keep renderFluxo, the G glyph map and DEFAULT behavior-identical for a given spec; arr/arrColor default to the original output when absent. Widening the gate, adding a render entrypoint, or moving #diagram means re-verifying the default render is byte-identical."
+
+PACS0003:
+  anchor: "pipeline/archive-to-dispatch-posts.mjs:claimIndex"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "tools/studio-server.mjs"
+    - ".claude/skills/slides/SKILL.md"
+    - ".claude/skills/dispatch/SKILL.md"
+  fails_silently: "a second same-day run overwrites the first run's raw backgrounds in shared staging, or two archivers claim the same NNN and one silently overwrites the other's archived post"
+  justification: "staging paths live in prose inside the skills while index numbers are minted by two independent scripts, so nothing mechanically forces a new module or a second minting authority to respect either rule"
+  kind: "convention"
+  notes: "Two halves. (1) Staging must be unique per deliverable, work/<module>-<DATE>-<slug>/, never date-only; positional bg-<id>.png filenames collide otherwise. This is how slides deck 007 lost its backgrounds on 2026-07-16. (2) dispatch-posts numbers must be claimed through claimIndex (O_EXCL .lock), never a private scan-max; studio-server's renderKind is the second authority."
+
+PACS0004:
+  anchor: "pipeline/generate-images.mjs:writeBg"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "pipeline/archive-to-dispatch-posts.mjs"
+    - "../pietro-enterprise/registry/contracts/validate-contract.mjs"
+    - "../pietro-enterprise/registry/contracts/slides.contract.md"
+    - "../pietro-enterprise/registry/contracts/news.contract.md"
+    - "../pietro-enterprise/registry/contracts/article.contract.md"
+    - "../pietro-enterprise/registry/contracts/fluxogram.contract.md"
+    - "../pietro-enterprise/registry/contracts/tutorial.contract.md"
+    - ".claude/skills/slides/SKILL.md"
+    - ".claude/skills/dispatch/SKILL.md"
+    - ".claude/skills/article/SKILL.md"
+  fails_silently: "a deck's raw backgrounds exist only in staging, so reusing or wiping that folder loses them for good and the deck can never be re-rendered; discovered only when someone tries"
+  justification: "GPT Image 2 cannot reproduce a background identically, so a background that reaches only staging is a single-copy artifact whose absence no check ever reports"
+  kind: "convention"
+  notes: "A raw generative source (bg-*.png, or a fluxogram/tutorial render spec) must be delivered into the queue folder AND archived into dispatch-posts. writeBg additionally snapshots an existing bg to bg-<id>.old-<stamp>.png before rewrite; --force overwrites in place."
+
+PACS0005:
+  anchor: "tools/atomic-json.mjs:writeJsonAtomic"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "tools/studio-server.mjs"
+    - "tools/scan-assets.mjs"
+    - "tools/dashboard-data.mjs"
+    - "tools/publish.mjs"
+  fails_silently: "a concurrent reader loads a truncated plan.json or assets.json and sees a partial or invalid queue"
+  justification: "plan.json and assets.json are read by Studio, dashboard-data and publish while another process rewrites them, and a plain writeFile leaves a window where the file on disk is incomplete"
+  kind: "determinism"
+  notes: "studio-server and scan-assets are the writers; dashboard-data and publish are readers today. Any NEW write path to db/*.json must go through writeJsonAtomic (tmp+rename), never writeFile in place."
+
+PACS0006:
+  anchor: "pipeline/archive-to-dispatch-posts.mjs:archiveOne"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "tools/scan-assets.mjs"
+  fails_silently: "re-archiving a delivery mints a duplicate under a new number, or the slides LinkedIn document title loses its #NNN"
+  justification: "the archive writes meta.number and scan-assets reads that same field to build the document title, so producer and consumer are coupled through a key neither side validates"
+  kind: "message-contract"
+  notes: "On first archive the assigned number is stamped into the delivery meta.json; a re-archive reuses it and overwrites <prefix>-NNN.* in place. scan-assets reads meta.number for the title Pietro.works IN_THE_LOOP.MD #NNN."
+
+PACS0007:
+  anchor: "tools/publish.mjs:withCalendarLock"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "tools/studio-server.mjs"
+    - "tools/slot-engine.mjs"
+    - "tools/dashboard-data.mjs"
+  fails_silently: "a CLI publish and a Studio apply-plan interleave calendar writes, losing bookings or double-scheduling the same asset on LinkedIn"
+  justification: "two independent entrypoints write db/calendar.json and the LinkedIn side effect happens before the write, so an interleaved run can post the same asset twice with nothing reporting an error"
+  kind: "convention"
+  notes: "The schedule loop holds an exclusive calendar.json.lock and re-reads the calendar before each post, skipping any asset another run already scheduled. tools/publish.mjs and tools/linkedin-core.mjs are deliberately untracked (held out of the public repo); the invariant still applies locally."
+
+PACS0008:
+  anchor: "renderer/news.mjs:suppressEditorChrome"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "renderer/article.mjs"
+    - "renderer/news.html"
+    - "renderer/article.html"
+  fails_silently: "every delivered news card and article banner carries a pale hairline and a bright grab-handle pill across its bottom edge; the render succeeds, the dimensions validate and both gates pass on shape"
+  justification: "the .dock is static body markup so the headless JS gate never sees it, and a clipped captureScreenshot paints the 14px sliver the fixed-position transform leaves inside the viewport"
+  kind: "determinism"
+  notes: "Editor chrome that is STATIC markup must be suppressed by the render driver. news.html and article.html carry .dock as static <body> markup, unlike slides.html #sed-bar and fluxogram.html #ed-bar which the headless-gated editor IIFE builds and so never exist on a render. Verify by measuring: the bottom 28 device rows of a 2160 news card must show no full-width hairline and no bright centered pill. It shipped once: news-038 through news-049 carried the bar after the 2026-07-22 studio-uniform pass changed the transform from translateY(100%). renderer/tutorial.html carries an identically shaped .dock but tutorial.mjs is IMMUNE because it exports via htmlToImage.toCanvas(#tut), a subtree serialization that never includes the fixed-position sibling; if tutorial.mjs is ever moved to a clipped captureScreenshot, it joins this entry."
+```
+
+Numbering: `0001` to `0099` are code-enforced invariants and carry a `PACS####` tag at the anchor; `0100`+ are process rules that live in prose with no anchor. Append-only: never reuse or renumber, and retire a dead entry with `retired: true` rather than deleting it. Run `pacs check` to verify registry health.

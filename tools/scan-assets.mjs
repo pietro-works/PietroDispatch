@@ -145,7 +145,7 @@ async function scanFluxograms(drive, assets) {
     try { meta = JSON.parse(await readFile(join(dir, 'meta.json'), 'utf8')); } catch {}
     const date = folder.slice(0, 10);
     const slug = folder.slice(11);
-    const img = join(dir, 'fluxogram.png');       // PACS0001 — fluxogram.png is the fluxogram folder marker
+    const img = join(dir, 'fluxogram.png');       // PACS0001 — fluxogram.png is the fluxogram folder marker — AGENTS.md (known sites, not exhaustive)
     if (!await exists(img)) continue;
     const cap = join(dir, 'caption.txt');
     const caption = await exists(cap) ? await readText(cap) : '';
@@ -170,7 +170,7 @@ async function scanTutorials(drive, assets) {
     try { meta = JSON.parse(await readFile(join(dir, 'meta.json'), 'utf8')); } catch {}
     const date = folder.slice(0, 10);
     const slug = folder.slice(11);
-    const img = join(dir, 'tutorial.png');       // PACS0001 — tutorial.png is the tutorial folder marker
+    const img = join(dir, 'tutorial.png');       // PACS0001 — tutorial.png is the tutorial folder marker — AGENTS.md (known sites, not exhaustive)
     if (!await exists(img)) continue;
     const cap = join(dir, 'caption.txt');
     const caption = await exists(cap) ? await readText(cap) : '';
@@ -190,7 +190,7 @@ async function main() {
   await mkdir(THUMBS_DIR, { recursive: true });
   const assets = [];
   // PACS0001 — every delivery type is wired in 5 places (contract doc, validate-contract.mjs,
-  // this scanner, archive detectType, modules.json) — see stack/pietro-dispatch/AGENTS.md
+  // this scanner, archive detectType, modules.json) — AGENTS.md (known sites, not exhaustive)
   await scanNews(drive, assets);
   await scanSlides(drive, assets);
   await scanArticles(drive, assets);

@@ -60,7 +60,7 @@ const RENDER_KINDS = {
 };
 let renderBusy = false;
 // PACS0003 — numbering is claimed through the archive script's single authority (claimIndex),
-// not a second local scan-max, so a Studio render and a CLI archive can't mint the same NNN.
+// not a second local scan-max, so a Studio render and a CLI archive can't mint the same NNN — AGENTS.md (known sites, not exhaustive)
 async function renderKind(kind, spec) {
   const k = RENDER_KINDS[kind];
   if (!k) throw new Error('unsupported kind — news and article render through the pipeline');

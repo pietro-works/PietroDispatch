@@ -249,7 +249,7 @@ renderFluxo(window.__FLUXO || DEFAULT);
    ========================================================================== */
 (function(){
   var params = new URLSearchParams(location.search);
-  // PACS0002 — headless render path builds NO editor chrome; #diagram stays the pure screenshot surface — AGENTS.md
+  // PACS0002 — headless render path builds NO editor chrome; #diagram stays the pure screenshot surface — AGENTS.md (known sites, not exhaustive)
   var HEADLESS = params.has('headless')
     || window.__FLUXO != null
     || navigator.webdriver === true
