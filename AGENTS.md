@@ -105,6 +105,19 @@ PACS0008:
   justification: "the .dock is static body markup so the headless JS gate never sees it, and a clipped captureScreenshot paints the 14px sliver the fixed-position transform leaves inside the viewport"
   kind: "determinism"
   notes: "Editor chrome that is STATIC markup must be suppressed by the render driver. news.html and article.html carry .dock as static <body> markup, unlike slides.html #sed-bar and fluxogram.html #ed-bar which the headless-gated editor IIFE builds and so never exist on a render. Verify by measuring: the bottom 28 device rows of a 2160 news card must show no full-width hairline and no bright centered pill. It shipped once: news-038 through news-049 carried the bar after the 2026-07-22 studio-uniform pass changed the transform from translateY(100%). renderer/tutorial.html carries an identically shaped .dock but tutorial.mjs is IMMUNE because it exports via htmlToImage.toCanvas(#tut), a subtree serialization that never includes the fixed-position sibling; if tutorial.mjs is ever moved to a clipped captureScreenshot, it joins this entry."
+
+PACS0009:
+  anchor: "tools/scan-assets.mjs:scanQuotes"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "../pietro.works/gen/quote/linkedin-schedule/queue.tsv"
+    - "../pietro.works/gen/quote/linkedin-posts.md"
+    - "../pietro.works/gen/quote/quotes.tsv"
+    - "tools/publish.mjs"
+    - "db/slots.json"
+  fails_silently: "an already-posted quote re-enters the schedulable queue and is posted twice, or a pending quote silently drops out of assets.json because its caption heading no longer parses"
+  justification: "scanQuotes takes posted-state from the legacy quote scheduler's queue.tsv (status scheduled|skipped = live) and captions from linkedin-posts.md '## Post NNN' headings, two files owned by a tool Studio no longer runs, with no check that either still means what the scanner assumes"
+  kind: "message-contract"
+  notes: "Quotes are a flat library (assets/linkedin-images-2160/pietro-quote-NNN.png), not a delivery folder, so they sit outside PACS0001's detectType/validate-contract/modules.json sites. Only status 'pending' rows become assets; 001-045 are posted. Once Studio books a quote in calendar.json, publish.mjs' live-booking check is the second guard against a double post. Schedule via apply-plan into explicit slots; slots.json has no managed quote pool by design (even-quote is managed:false)."
 ```
 
 Numbering: `0001` to `0099` are code-enforced invariants and carry a `PACS####` tag at the anchor; `0100`+ are process rules that live in prose with no anchor. Append-only: never reuse or renumber, and retire a dead entry with `retired: true` rather than deleting it. Run `pacs check` to verify registry health.

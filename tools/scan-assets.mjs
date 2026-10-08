@@ -185,6 +185,39 @@ async function scanTutorials(drive, assets) {
   }
 }
 
+/**
+ * Quotes: not a delivery folder. A flat library of 180 square quote images with one caption
+ * each. The legacy quote scheduler's queue.tsv is the posted-record: status scheduled|skipped
+ * means already live, so only `pending` rows become assets and a posted quote can never
+ * re-enter the queue. Scheduling goes through apply-plan into explicit slots.
+ */
+async function scanQuotes(drive, assets) {
+  const env = join(drive, 'pietro-works-env');
+  const qDir = join(env, 'stack/pietro.works/gen/quote');
+  const imgDir = join(env, 'assets/linkedin-images-2160');
+  const queuePath = join(qDir, 'linkedin-schedule/queue.tsv');
+  const postsPath = join(qDir, 'linkedin-posts.md');
+  const tsvPath = join(qDir, 'quotes.tsv');
+  if (!await exists(queuePath) || !await exists(postsPath) || !await exists(tsvPath)) return;
+  const rows = (await readText(queuePath)).split('\n').slice(1).map((l) => l.split('\t'));
+  const pending = rows.filter((r) => r[0] && r[5] === 'pending').map((r) => r[0]);   // PACS0009 — pending in the legacy queue.tsv is the only gate that keeps posted quotes out
+  const captions = new Map();
+  for (const m of (await readText(postsPath)).matchAll(/^## Post (\d{3})\s*\n([\s\S]*?)(?=^## Post \d{3}\s*$|(?![\s\S]))/gm)) captions.set(m[1], m[2].trim());
+  const texts = new Map((await readText(tsvPath)).split('\n').slice(1).map((l) => { const c = l.split('\t'); return [c[0], c[1]]; }));
+  for (const n of pending.sort()) {
+    const img = join(imgDir, `pietro-quote-${n}.png`);
+    const caption = captions.get(n) || '';
+    if (!await exists(img) || !caption) { console.error(`quote ${n} skipped: ${!caption ? 'no caption in linkedin-posts.md' : 'no image'}`); continue; }
+    const id = `quote:${n}`;
+    let thumb_rel = '';
+    try { thumb_rel = await makeThumb(img, id); } catch (e) { console.error(`thumb failed ${id}: ${e.message}`); }
+    assets.push({
+      asset_id: id, type: 'quote', kind: 'image', date: '', slug: `pietro-quote-${n}`, number: Number(n),
+      title: texts.get(n) || `Quote ${n}`, caption, media_path: img, cover_path: img, thumb_rel,
+    });
+  }
+}
+
 async function main() {
   const drive = arg('--drive', DEFAULT_DRIVE);
   await mkdir(THUMBS_DIR, { recursive: true });
@@ -196,6 +229,7 @@ async function main() {
   await scanArticles(drive, assets);
   await scanFluxograms(drive, assets);
   await scanTutorials(drive, assets);
+  await scanQuotes(drive, assets);
   assets.sort((a, b) => (b.date.localeCompare(a.date)) || a.asset_id.localeCompare(b.asset_id));
   await writeJsonAtomic(ASSETS_PATH, assets);
   const byType = assets.reduce((m, a) => ((m[a.type] = (m[a.type] || 0) + 1), m), {});
