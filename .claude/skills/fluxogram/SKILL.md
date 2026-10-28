@@ -5,6 +5,8 @@ description: Make one Pietro.works fluxogram: an evergreen concept taught as a w
 
 # Fluxogram
 
+**Step 0 (always first): read `prompts/GENERATORS.md`** (the capability map of every generator: spec fields, glyphs, connectors, fit gates, gaps). Design the post from the full toolbox, and if another format or lever fits the idea better, say so before building.
+
 You are producing one Pietro.works fluxogram: a durable idea laid out as a wide six-card horizontal flow. Read `MASTERPLAN.md` once for the system. Voice is governed by `prompts/PIETRO_WORKS_VOICE.MD` and `prompts/HUMANIZE.md`. The concept bar is the evergreen scan in `prompts/slides-curation.md` (shared with slides). The spec design and the caption format are `prompts/fluxogram-generation.md`. This file is the sequence and the data contracts.
 
 Fluxograms are evergreen, not news, and a single wide PNG, not a carousel or a PDF. The track runs on a schedule: two fluxograms every Thursday at 13:00, the same hour as slides, each a fresh durable idea. It can also be run on demand. Set `DATE` to today in `YYYY-MM-DD`, derive a short kebab `slug` from the concept, and stage under `work/fluxogram-<DATE>-<slug>/`.

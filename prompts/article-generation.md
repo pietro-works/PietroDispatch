@@ -8,7 +8,7 @@ Each variation has five fields plus the image prompt:
 
 ## category
 
-Uppercase, one of BREAKING, ANALYSIS, INDUSTRY, INSIGHT, REPORT, OPINION. For most articles ANALYSIS, INSIGHT, or OPINION fits. It drives the pill accent color, same map as news.
+Uppercase, one of BREAKING, ANALYSIS, INDUSTRY, INSIGHT, REPORT, OPINION. For most articles ANALYSIS, INSIGHT, or OPINION fits. It is the pill label only; the colour map is not wired to any CSS, so the choice does not change the look.
 
 ## kicker
 

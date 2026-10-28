@@ -5,6 +5,8 @@ description: Make a LinkedIn Article Cover banner (1920x1080) in the Pietro.work
 
 # Article Banner
 
+**Step 0 (always first): read `prompts/GENERATORS.md`** (the capability map of every generator: spec fields, glyphs, connectors, fit gates, gaps). Design the post from the full toolbox, and if another format or lever fits the idea better, say so before building.
+
 You are producing the cover banner for one LinkedIn article. The banner is 1920x1080, the article cover size LinkedIn recommends. Look and voice are governed by `prompts/article-generation.md` (artifact spec, layout-safety rules for image prompts) on top of `prompts/PIETRO_WORKS_VOICE.MD` and `prompts/HUMANIZE.md`. Follow those files; this one is the sequence and the data contracts.
 
 Input: the article's title or draft (from Pietro or a file he points at), plus an optional category and series kicker. If there is no article text at all, ask for at least a title and angle; do not invent an article.

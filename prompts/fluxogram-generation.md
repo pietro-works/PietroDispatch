@@ -77,3 +77,8 @@ Rules that keep it aligned:
 - Every mono line short enough not to wrap; when in doubt, cut a word.
 - `flow` and `footR` each carry exactly one `<b>` gradient span; `kick` and `footL` carry none.
 - The orchestrator writes `spec` to `spec.json` and `caption` to `caption.txt`.
+
+
+## Extra levers
+
+`arr`, `arrs`, `arrColor` (connector characters and colour) and `tint` (per-element colours) are supported by the renderer. See `prompts/GENERATORS.md` section 5 before designing the flow.

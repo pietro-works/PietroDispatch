@@ -120,8 +120,8 @@ async function archiveOne(o) {
     }
   } else if (type === 'tutorial') {
     const names = await readdir(folder);
-    const png = names.find((n) => /^tutorial-\d+\.png$/.test(n)) || names.find((n) => /^post-01\.png$/.test(n)) || names.find((n) => n.endsWith('.png') && !n.startsWith('bg-'));
-    const bg = names.find((n) => /^bg-/.test(n) && n.endsWith('.png'));
+    const png = names.find((n) => n === 'tutorial.png') || names.find((n) => /^tutorial-\d+\.png$/.test(n)) || names.find((n) => /^post-01\.png$/.test(n)) || names.find((n) => n.endsWith('.png') && !/^bg[-.]/.test(n));
+    const bg = names.find((n) => /^bg[-.]/.test(n) && n.endsWith('.png'));
     if (png) plan.push([png, `tutorial-${nnn}.png`]);
     if (bg) plan.push([bg, `bg-tutorial-${nnn}.png`]);
     if (names.includes('spec.json')) plan.push(['spec.json', `tutorial-${nnn}.json`]); // PACS0004 — keep the re-render spec — AGENTS.md (known sites, not exhaustive)

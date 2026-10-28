@@ -14,8 +14,10 @@
  * spec.json: {
  *   top, bot, size:'s'|'m'|'l', shape:'rect'|'circle', radius, hsize, scrim, blur,
  *   bg: "<path rel to root>",
+ *   hConn: { "<row>-<col>": { t:'arrow'|'line'|'dashed'|'x'|'plus'|'num'|'none', dir:'fwd'|'back', n:'<badge text for num>' } }  // gap AFTER column <col> in row <row>; absent = forward arrow
+ *   vConn: { "<col>": { t:..., dir:'up'|'down', n } }  // between top and bottom row, only where both rows share the column; absent = none
  *   text: { tbLeft, tbRight, eyebrow, headline(html with <span class=accent>), idName, idRole, idCta },
- *   cells: [ { key:"0-0", img:"<path rel to root>", num, name, sub }, ... ]
+ *   cells: [ { key:"0-0", img:"<path rel to root>", num, name, sub, tf?:{z:1..3, px, py} }, ... ]   // tf = zoom and pan inside the frame; absent = fit
  * }
  */
 import { createServer } from 'node:http';
@@ -109,7 +111,7 @@ async function main() {
   const cells = [];
   for (const c of (spec.cells || [])) {
     const p = join(root, c.img); const sz = await pngSize(p);
-    cells.push({ key: c.key, url: await dataUrl(p), w: sz.w, h: sz.h, num: c.num || '', name: c.name || '', sub: c.sub || '' });
+    cells.push({ key: c.key, url: await dataUrl(p), w: sz.w, h: sz.h, num: c.num || '', name: c.name || '', sub: c.sub || '', tf: c.tf || null });
   }
 
   const bin = await resolveChrome(o.chrome);
@@ -120,18 +122,22 @@ async function main() {
     // wait for the template's globals + the html-to-image lib + fonts
     await evalP(page, `(async()=>{ for(let i=0;i<200 && (typeof render!=='function' || typeof htmlToImage==='undefined'); i++){ await new Promise(r=>setTimeout(r,50)); } await (document.fonts?document.fonts.ready:Promise.resolve()); })()`);
 
+    // PACS0010 — spec levers must match prompts/GENERATORS.md — AGENTS.md (known sites, not exhaustive)
     const inject = {
       top: spec.top, bot: spec.bot, size: spec.size || 's', shape: spec.shape || 'rect',
       radius: spec.radius != null ? spec.radius : 16, hsize: spec.hsize || 52,
       scrim: spec.scrim != null ? spec.scrim : 60, blur: spec.blur != null ? spec.blur : 0,
       text: spec.text || {}, bg: bgUrl, cells,
+      hConn: spec.hConn || null, vConn: spec.vConn || null,
     };
     await evalP(page, `(() => {
       const s = ${JSON.stringify(inject)};
       state.top = s.top; state.bot = s.bot; state.size = s.size; state.shape = s.shape;
       state.radius = s.radius; state.hsize = s.hsize; state.scrim = s.scrim; state.blur = s.blur;
       state.images = {}; state.cap = {}; state.dim = {}; state.tf = {};
-      for (const c of s.cells) { state.images[c.key] = c.url; state.dim[c.key] = { w: c.w, h: c.h }; state.tf[c.key] = { z: 1, px: 0, py: 0 }; state.cap[c.key] = { num: c.num, name: c.name, sub: c.sub }; }
+      for (const c of s.cells) { state.images[c.key] = c.url; state.dim[c.key] = { w: c.w, h: c.h }; state.tf[c.key] = c.tf ? { z: c.tf.z || 1, px: c.tf.px || 0, py: c.tf.py || 0 } : { z: 1, px: 0, py: 0 }; state.cap[c.key] = { num: c.num, name: c.name, sub: c.sub }; }
+      if (s.hConn) state.hConn = s.hConn;
+      if (s.vConn) state.vConn = s.vConn;
       state.text = s.text;
       if (typeof restoreText === 'function') restoreText();
       const hl = document.getElementById('headline'); if (hl) hl.style.fontSize = s.hsize + 'px';

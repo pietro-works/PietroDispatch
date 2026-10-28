@@ -118,6 +118,21 @@ PACS0009:
   justification: "scanQuotes takes posted-state from the legacy quote scheduler's queue.tsv (status scheduled|skipped = live) and captions from linkedin-posts.md '## Post NNN' headings, two files owned by a tool Studio no longer runs, with no check that either still means what the scanner assumes"
   kind: "message-contract"
   notes: "Quotes are a flat library (assets/linkedin-images-2160/pietro-quote-NNN.png), not a delivery folder, so they sit outside PACS0001's detectType/validate-contract/modules.json sites. Only status 'pending' rows become assets; 001-045 are posted. Once Studio books a quote in calendar.json, publish.mjs' live-booking check is the second guard against a double post. Schedule via apply-plan into explicit slots; slots.json has no managed quote pool by design (even-quote is managed:false)."
+
+PACS0010:
+  anchor: "renderer/tutorial.mjs:inject"
+  sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
+    - "prompts/GENERATORS.md"
+    - "renderer/news.mjs"
+    - "renderer/article.mjs"
+    - "renderer/slides.mjs"
+    - "renderer/fluxogram.mjs"
+    - ".claude/skills/tutorial/SKILL.md"
+    - "../pietro-enterprise/skills/pipeline/SKILL.md"
+  fails_silently: "a renderer gains or loses a spec field, glyph, connector or fit rule and the capability map keeps describing the old toolbox, so every future post is designed from a stale or incomplete list and the new lever is never used"
+  justification: "the map is prose read by the model at the start of each pipeline, no renderer or test reads it, so nothing fails when a renderer and the map drift apart"
+  kind: "convention"
+  notes: "prompts/GENERATORS.md is Step 0 of the dispatch, slides, fluxogram, article and tutorial skills. Any change to a driver's spec (renderer/*.mjs), a template's lever (renderer/*.html: glyph map G, connector types, fit gates), or a Studio RENDER_KINDS entry updates GENERATORS.md in the same change. tutorial.mjs hConn, vConn and tf were added 2026-10-28 with the default render verified byte-identical (md5 before and after)."
 ```
 
 Numbering: `0001` to `0099` are code-enforced invariants and carry a `PACS####` tag at the anchor; `0100`+ are process rules that live in prose with no anchor. Append-only: never reuse or renumber, and retire a dead entry with `retired: true` rather than deleting it. Run `pacs check` to verify registry health.

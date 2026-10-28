@@ -5,6 +5,8 @@ description: Run the daily Pietro Dispatch pipeline. Use when asked to produce t
 
 # Dispatch
 
+**Step 0 (always first): read `prompts/GENERATORS.md`** (the capability map of every generator: spec fields, glyphs, connectors, fit gates, gaps). Design the post from the full toolbox, and if another format or lever fits the idea better, say so before building.
+
 You are running one cycle of Pietro Dispatch. Read `MASTERPLAN.md` once if you have not. Voice is governed by `prompts/PIETRO_WORKS_VOICE.MD` and `prompts/HUMANIZE.md`. Curation by `prompts/curation.md`. The artifact spec and the template field mapping by `prompts/generation.md`. Follow those files; this one is the sequence and the data contracts.
 
 Set `DATE` to today in `YYYY-MM-DD`. All staging lives under `work/news-<DATE>/`. One batch per day

@@ -5,6 +5,8 @@ description: Run one Pietro.works slides cycle. Use when asked to produce an eve
 
 # Slides
 
+**Step 0 (always first): read `prompts/GENERATORS.md`** (the capability map of every generator: spec fields, glyphs, connectors, fit gates, gaps). Design the post from the full toolbox, and if another format or lever fits the idea better, say so before building.
+
 You are running one cycle of Pietro.works slides: an evergreen concept taught as a short
 LinkedIn document carousel. Read `MASTERPLAN.md` once for the system. Voice is governed by
 `prompts/PIETRO_WORKS_VOICE.MD` and `prompts/HUMANIZE.md`. Concept selection by
