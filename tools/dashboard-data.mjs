@@ -6,7 +6,8 @@
  *
  * Usage: node dashboard-data.mjs [--limit 60]
  */
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
+import { writeJsonAtomic } from './atomic-json.mjs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSlots, loadCalendar, peek } from './slot-engine.mjs';
@@ -53,7 +54,8 @@ export async function buildDashboard(limit = 60) {
 
 async function main() {
   const data = await buildDashboard(Number(arg('--limit', 60)));
-  await writeFile(OUT_PATH, `${JSON.stringify(data, null, 2)}\n`);
+  // PACS0005 — Studio's static fallback reads this file while it is rewritten — AGENTS.md (known sites, not exhaustive)
+  await writeJsonAtomic(OUT_PATH, data);
   console.log(`wrote ${data.cards.length} cards -> ${OUT_PATH}`);
 }
 

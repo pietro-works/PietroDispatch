@@ -2,7 +2,8 @@
 /**
  * scan-assets.mjs — index every postable asset on Drive into db/assets.json and
  * generate ~360px thumbnails into db/thumbs/. Source of truth is the Drive output of the
- * generator modules (news, slides, article); this only reads them.
+ * generator modules (news, slides, article, fluxogram, tutorial) plus the quote library; this only
+ * reads them.
  *
  *   News:   Pietro Dispatch/<DATE>/candidate-<NN>-<slug>/{post-1,post-2}.png + caption-{1,2}.txt
  *           (two image units per candidate; *_old.* archives are ignored)
@@ -186,10 +187,11 @@ async function scanTutorials(drive, assets) {
 }
 
 /**
- * Quotes: not a delivery folder. A flat library of 180 square quote images with one caption
- * each. The legacy quote scheduler's queue.tsv is the posted-record: status scheduled|skipped
- * means already live, so only `pending` rows become assets and a posted quote can never
- * re-enter the queue. Scheduling goes through apply-plan into explicit slots.
+ * Quotes: not a delivery folder. A flat library of square quote images, one per quotes.tsv row,
+ * each with a `## Post NNN` caption in linkedin-posts.md. Every quotes.tsv row is a candidate.
+ * The retired legacy scheduler's queue.tsv is kept FROZEN as the record of quotes it already
+ * posted (status scheduled|skipped); those never re-enter. Everything booked since then lives in
+ * db/calendar.json, which the dashboard and publish.mjs read as the live guard.
  */
 async function scanQuotes(drive, assets) {
   const env = join(drive, 'pietro-works-env');
@@ -198,22 +200,30 @@ async function scanQuotes(drive, assets) {
   const queuePath = join(qDir, 'linkedin-schedule/queue.tsv');
   const postsPath = join(qDir, 'linkedin-posts.md');
   const tsvPath = join(qDir, 'quotes.tsv');
-  if (!await exists(queuePath) || !await exists(postsPath) || !await exists(tsvPath)) return;
-  const rows = (await readText(queuePath)).split('\n').slice(1).map((l) => l.split('\t'));
-  const pending = rows.filter((r) => r[0] && r[5] === 'pending').map((r) => r[0]);   // PACS0009 — pending in the legacy queue.tsv is the only gate that keeps posted quotes out
+  if (!await exists(postsPath) || !await exists(tsvPath)) return;
+  // PACS0009 — the frozen legacy queue.tsv is the only record of quotes posted before Studio; a
+  // scheduled|skipped row there must never come back — AGENTS.md (known sites, not exhaustive)
+  const legacyPosted = new Set();
+  if (await exists(queuePath)) {
+    for (const r of (await readText(queuePath)).split('\n').slice(1).map((l) => l.split('\t'))) {
+      if (r[0] && (r[5] === 'scheduled' || r[5] === 'skipped')) legacyPosted.add(r[0]);
+    }
+  }
   const captions = new Map();
   for (const m of (await readText(postsPath)).matchAll(/^## Post (\d{3})\s*\n([\s\S]*?)(?=^## Post \d{3}\s*$|(?![\s\S]))/gm)) captions.set(m[1], m[2].trim());
-  const texts = new Map((await readText(tsvPath)).split('\n').slice(1).map((l) => { const c = l.split('\t'); return [c[0], c[1]]; }));
-  for (const n of pending.sort()) {
+  const rows = (await readText(tsvPath)).split('\n').slice(1).map((l) => l.split('\t')).filter((c) => /^\d+$/.test((c[0] || '').trim()));
+  for (const c of rows) {
+    const n = c[0].trim().padStart(3, '0');
+    if (legacyPosted.has(n)) continue;
     const img = join(imgDir, `pietro-quote-${n}.png`);
     const caption = captions.get(n) || '';
-    if (!await exists(img) || !caption) { console.error(`quote ${n} skipped: ${!caption ? 'no caption in linkedin-posts.md' : 'no image'}`); continue; }
+    if (!await exists(img) || !caption) { console.error(`quote ${n} skipped: ${!caption ? `no "## Post ${n}" caption in linkedin-posts.md` : `no image (run: node renderer/quote.mjs --ids ${Number(n)})`}`); continue; }
     const id = `quote:${n}`;
     let thumb_rel = '';
     try { thumb_rel = await makeThumb(img, id); } catch (e) { console.error(`thumb failed ${id}: ${e.message}`); }
     assets.push({
       asset_id: id, type: 'quote', kind: 'image', date: '', slug: `pietro-quote-${n}`, number: Number(n),
-      title: texts.get(n) || `Quote ${n}`, caption, media_path: img, cover_path: img, thumb_rel,
+      title: c[1] || `Quote ${n}`, caption, media_path: img, cover_path: img, thumb_rel,
     });
   }
 }

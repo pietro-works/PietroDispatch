@@ -78,7 +78,7 @@ Over the photo sits the Pietro.works system: the cyan to green to violet spectru
 
 Dispatch chases the day. Sliders does the opposite: one durable idea taught as a short LinkedIn carousel, the kind that keeps getting saved months later. The series is `IN_THE_LOOP.MD`, and a run makes a three to five slide deck plus its caption.
 
-It reuses the dispatch image pipeline wholesale, same `gpt-image-2` backgrounds and warm-accent rule, and adds a second renderer, `slides.mjs`, on the same headless Chrome. Slides come in four shapes the deck mixes by fit: a hero with a glyph row, a steps card, a before-and-after split where the renderer desaturates the *before* so the *after* lands in color, and a contact close. It stitches the slides into a square PDF, what LinkedIn wants for a document post. Fonts are self-hosted as woff2 in `renderer/fonts/`, after the CDN versions kept hanging mid-render.
+It reuses the dispatch image pipeline wholesale, same `gpt-image-2` backgrounds and warm-accent rule, and adds a second renderer, `slides.mjs`, on the same headless Chrome. Slides come in four shapes the deck mixes by fit: a hero with a glyph row, a steps card, a before-and-after split where the renderer desaturates the *before* so the *after* lands in color, and a contact close. It stitches the slides into a square PDF, what LinkedIn wants for a document post. Its fonts ship as woff2 in `renderer/fonts/`, so a deck renders the same offline.
 
 One full `IN_THE_LOOP.MD` deck, on right-sizing your model calls:
 
@@ -111,13 +111,17 @@ The pipeline diagram near the top of this page is not a drawing. It came out of 
 
 The look is shared. It takes one warm background from a small cold-steel library instead of a fresh GPT Image 2 paint, then lays the brand scrim and gradient accent over it. A spec is a small JSON file, so a fluxogram is re-renderable: change a card, run it again, get a clean 2400 by 822 PNG. Four are out so far, on the eval loop, build versus buy, keeping a human in the loop, and cutting the model bill.
 
-This track runs on a clock now: two fluxograms every Thursday, the same hour sliders goes out. Each is a fresh durable idea, picked, drawn, gated, and dropped in Drive.
+This track runs on a clock now: two fluxograms every Thursday, the same hour sliders goes out. Each is a fresh durable idea, picked, drawn, gated, and dropped into its own dated folder.
+
+## Tutorials, quotes, and the profile cover
+
+Three smaller generators sit beside the main tracks. A tutorial teaches a how-to as up to eight captioned step images joined by connectors, one 2160 square. A quote card turns a single line from a running library into a square card with one accent phrase, rendered by `quote.mjs` from a plain TSV row. The LinkedIn profile cover comes in a dark and a light version, made in the browser and exported by hand, since it changes about once a year.
 
 ## Scheduling and the queue
 
 ![Pietro Studio](docs/assets/studio.webp)
 
-The two feed tracks never wait for someone to press start. Each runs as a scheduled job on its own cadence, builds the dated folder, and drops it in Drive: dispatch on odd days, sliders on a lighter evergreen rhythm, fluxograms two every Thursday. Article covers stay off the calendar, made on demand.
+The scheduled tracks never wait for someone to press start. Each runs on its own cadence and builds its dated folder: dispatch on odd days, sliders on Tuesday and Thursday, two fluxograms every Thursday. Article covers stay off the calendar, made on demand.
 
 What comes out flows into a small control room. Studio reads every deck and card into one queue, tags each from unscheduled through scheduled to verified, finds the next open slot, and books the approved onto LinkedIn. A single-page dashboard in the same dark palette as the work, no framework. You pick what ships, the slot engine keeps the calendar.
 
@@ -127,14 +131,17 @@ The deterministic half runs from two scripts. Curation and writing are the reaso
 
 ```bash
 npm install
-export OPENAI_API_KEY=...   # the illustrate step needs it; org verification required for GPT Image 2
+export OPENAI_API_KEY=...   # read by the illustrate step
 
-# given a staged work/<date>/ with prompts.json and cards.json:
-node pipeline/generate-images.mjs --in work/<date>/prompts.json --out work/<date>/backgrounds
-node renderer/news.mjs --cards work/<date>/cards.json --root work/<date> --out work/<date>/cards
+# given a staged work/news-<date>/ with prompts.json and cards.json:
+node pipeline/generate-images.mjs --in work/news-<date>/prompts.json --out work/news-<date>/backgrounds
+node renderer/news.mjs --cards work/news-<date>/cards.json --root work/news-<date> --out work/news-<date>/cards
+
+# the local control room: queue, week planner, every generator
+npm run studio
 ```
 
-The renderer finds Chrome from `CHROME_BIN` or the usual locations. Fonts load at render time, so there is nothing to install for the type to look right.
+The renderer finds Chrome from `CHROME_BIN` or the usual locations. Fonts are either bundled in `renderer/fonts/` or fetched at render time, so there is nothing to install for the type to look right.
 
 ## Layout
 
@@ -153,11 +160,17 @@ pietro-dispatch/
     slides.html  slides.mjs   sliders template, 2160 export plus square-PDF stitch
     article.html article.mjs  article cover template, 1920x1080 export
     fluxogram.html fluxogram.mjs  the flow-diagram (fluxogram) renderer, re-renderable
+    tutorial.html tutorial.mjs    step-by-step tutorial card, 2160 export
+    quote.html   quote.mjs        quote card from a quotes.tsv row, 2160 export
+    linkedin-banner.dark.html     profile cover, dark (light twin beside it)
     fonts/                    self-hosted Clash and DM woff2
     *.png/.webp/.avif/.jpg    render-time brand assets
   pipeline/
-    generate-images.mjs       GPT Image 2 backgrounds, shared by all three
-  .claude/skills/             the dispatch, slides, article, and fluxogram run skills
+    generate-images.mjs       GPT Image 2 backgrounds, shared by every painted track
+    archive-to-dispatch-posts.mjs  numbered archive of everything delivered
+  tools/                      Studio server, asset scanner, slot engine
+  index.html  dashboard.html  Studio hub and schedule
+  .claude/skills/             run definitions for each track
   sources.yaml                the dispatch source pool
   docs/
     sliders-preview.html      the live, swipeable deck
@@ -166,7 +179,7 @@ pietro-dispatch/
 
 ## Status
 
-Three tracks run on a schedule now, firing locally and delivering to Drive untouched: news on odd days, sliders and fluxograms on Tuesday and Thursday. Article covers stay the deliberate exception, made on demand. Built as a study in AI-assisted rapid iteration: encode the taste once, then let the machine do the repetitive part and keep the human on the decision.
+Three tracks run on a schedule now: news on odd days, sliders on Tuesday and Thursday, fluxograms on Thursday. Article covers stay the deliberate exception, made on demand. Built as a study in AI-assisted rapid iteration: encode the taste once, then let the machine do the repetitive part and keep the human on the decision.
 
 ---
 

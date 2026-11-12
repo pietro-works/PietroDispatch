@@ -2,7 +2,7 @@
 
 Read this FIRST, before choosing a format or structuring any post. It lists every lever each renderer exposes, so a post is designed from the full toolbox instead of the habitual subset. Specs below are what the headless drivers accept; the editors can do more in places and those gaps are flagged.
 
-Sources: audited against the code on 2026-10-28. Line refs are in renderer/ (`news.html`, `news.mjs`, `article.html`, `article.mjs`, `slides.html`, `slides.mjs`, `fluxogram.html`, `fluxogram.mjs`, `tutorial.html`, `tutorial.mjs`) `quote.html`, `quote.mjs`.
+Sources: audited against the code on 2026-10-28; quote and LinkedIn banner added and Studio re-audited 2026-11-12. Line refs are in renderer/ (`news.*`, `article.*`, `slides.*`, `fluxogram.*`, `tutorial.*`, `quote.*`, `linkedin-banner.{dark,light}.html`).
 
 PACS0010 ties this file to the renderers: a new lever, field or format in any renderer means an edit here in the same change.
 
@@ -15,7 +15,8 @@ PACS0010 ties this file to the renderers: a new lever, field or format in any re
 | A durable process with a hinge step | fluxogram | six cards, one hero card, wide 2400x822 |
 | A hands-on how-to a reader can follow | tutorial | 1 to 8 image cells with captions and connectors, 2160 square |
 | A deep argument | article cover (1920x1080) + article text | cover only; text is written separately |
-| A standalone line | quote card | flat library, 180 rows, editor only |
+| A standalone line | quote card | one `quotes.tsv` row, 2160 square, headless via `quote.mjs` |
+| Not a post: the LinkedIn profile cover | banner | see §7, browser export only |
 
 Combine, do not default: the same idea can run as a fluxogram one week and a tutorial the next. Prefer the lever that makes the idea visible (a contrast is slides C, a sequence with a hinge is a fluxogram, a procedure with screenshots is a tutorial).
 
@@ -45,7 +46,7 @@ Gaps: no `--month` or `--year` pin, so re-rendering restamps to today. `--cat` c
 
 ## 3. Quote card
 
-Output `pietro-quote-NNN.png` 2160 square, light theme. Command: `node renderer/quote.mjs --out <dir> [--tsv <quotes.tsv>] [--ids all|1-5,9] [--force]`. Input is a row in `quotes.tsv` (`id`, `quote`, `highlight`); the default tsv is the quote library at `../pietro.works/gen/quote/quotes.tsv`. The template is `renderer/quote.html`, served by the driver with `/quotes.tsv` mapped to the chosen file. Existing valid PNGs are skipped unless `--force`. The delivered library lives in `assets/linkedin-images-2160/`, which is what `tools/scan-assets.mjs` indexes for Studio, so render there to enter the queue.
+Output `pietro-quote-NNN.png` 2160 square, light theme. Command: `node renderer/quote.mjs [--out <dir>] [--tsv <quotes.tsv>] [--ids all|1-5,9] [--force] [--batch 30] [--chrome <path>]`. Input is a row in `quotes.tsv` (`id`, `quote`, `highlight`); the default tsv is the quote library at `../pietro.works/gen/quote/quotes.tsv`. The template is `renderer/quote.html`, served by the driver with `/quotes.tsv` mapped to the chosen file. Existing valid PNGs are skipped unless `--force`. `--out` defaults to `pietro-works-env/assets/linkedin-images-2160/`, the library `tools/scan-assets.mjs` indexes for Studio. A quote enters the Studio queue when three things exist: its row in `quotes.tsv`, its image in the library, and a `## Post NNN` caption (the LinkedIn post text) in `../pietro.works/gen/quote/linkedin-posts.md`. Studio's refresh log names whichever is missing. No row cap. Quotes the retired legacy scheduler already posted (frozen `queue.tsv`, status scheduled or skipped) never come back (PACS0009). In Studio, the hub's Quote card opens `quote.html` with the live library (studio-server aliases `/renderer/quotes.tsv`).
 
 This replaces the old `tools/export-quote-images.mjs` in the quote repo, which refused to run on a hash pin and capped at 180 rows. A 2160 render of quote 001 differs from the delivered library image by about 1.6% mean pixel difference (text antialiasing and dot-matrix only). No ad hoc quote spec exists; add a row to the tsv. Editor can change eyebrow, name, role, overlays; the driver cannot.
 
@@ -118,13 +119,14 @@ Dark is the source of truth, built on the site's dark tokens (`#060a12`, cyan `#
 
 ## What is exposed where
 
-- Studio can re-render fluxogram, slides and tutorial through `/api/render` (RENDER_KINDS). Only fluxogram and slides editors call it; the tutorial editor has no render-to-archive button. News, article and quote are not renderable from Studio.
-- Studio indexes news, slides, article, fluxogram, tutorial and quote (quote only `pending` rows from the legacy queue).
+- The Studio hub (index.html) opens every template: Schedule, Fluxogram, News, Slides, Article, Tutorial, Quote, Banner.
+- Studio can re-render fluxogram, slides and tutorial through `/api/render` (RENDER_KINDS). Only fluxogram and slides editors call it; the tutorial editor has no render-to-archive button. News, article and quote render through their CLI drivers. Studio renders land in dispatch-posts only and do not become queue assets.
+- The LinkedIn banner is browser-only: not indexed, not queued, not renderable through `/api/render`.
+- Studio indexes news, slides, article, fluxogram, tutorial and quote (every quotes.tsv row with image + caption, minus quotes posted before Studio).
 - The enterprise registry has no capability field and no quote module; this file is the capability reference.
 
 ## Known defects not fixed here
 
-- `studio-server.mjs:201` calls an undefined `nextName` (GET /api/next-name returns 500). No caller found.
 - `validate-contract.mjs` does not enforce `bg.png` or `spec.json` for tutorials though the contract requires them.
 - `scan-assets.mjs` has no mixed-signal guard (a folder with `tutorial.png` and `banner-1.png` indexes twice).
-- Quote exporter hash pin; quotes 086 and 133 highlight mismatch.
+- Quotes 086 and 133: `highlight` is not a substring of the quote (quotes.tsv data), so no accent renders.

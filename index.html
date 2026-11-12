@@ -38,7 +38,7 @@
     margin:clamp(16px,3.6vh,36px) 0 8px;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.55);}
   .sub{font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);letter-spacing:.04em;margin-bottom:clamp(14px,3.2vh,30px);text-shadow:0 1px 10px rgba(0,0,0,.7);}
   .sub b{color:#bfefff;font-weight:500;}
-  .grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:clamp(10px,1.8vh,16px);}
+  .grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:1fr;gap:clamp(10px,1.8vh,16px);}
   a.card{display:flex;flex-direction:column;text-decoration:none;color:var(--ink);position:relative;min-height:0;
     background:rgba(10,17,32,.74);border:1px solid var(--line);border-radius:16px;
     padding:clamp(12px,2.2vh,20px) 22px clamp(10px,1.8vh,16px);backdrop-filter:blur(4px) saturate(1.05);
@@ -124,6 +124,20 @@
       <div class="desc">step-by-step cards<br>2160 square, spec-driven</div>
       <div class="chip" id="chip-tutorial">open the template</div>
     </a>
+    <a class="card" href="/renderer/quote.html">
+      <span class="num">07</span><span class="arrow">→</span>
+      <div class="glyph"><svg viewBox="0 0 24 24"><path d="M10 7H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2v1a3 3 0 0 1-3 3"/><path d="M20 7h-4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h2v1a3 3 0 0 1-3 3"/></svg></div>
+      <div class="name">Quote</div>
+      <div class="desc">quote library cards<br>2160 square, <span class="hi">one tsv row each</span></div>
+      <div class="chip" id="chip-quote">browse the library</div>
+    </a>
+    <a class="card" href="/renderer/linkedin-banner.dark.html">
+      <span class="num">08</span><span class="arrow">→</span>
+      <div class="glyph"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="1.5"/><circle cx="6.5" cy="17" r="2.5"/><line x1="11" y1="11" x2="19" y2="11"/><line x1="11" y1="14" x2="16" y2="14"/></svg></div>
+      <div class="name">Banner</div>
+      <div class="desc">LinkedIn profile cover<br>dark + light, 1584×396</div>
+      <div class="chip" id="chip-banner">profile asset · not queued</div>
+    </a>
   </div>
   <footer>
     <span>one queue · one calendar · one gate</span>
@@ -131,16 +145,16 @@
   </footer>
 </div>
 <script>
-fetch('/api/data',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+fetch('/api/data',{cache:'no-store'}).then(r=>{if(!r.ok)throw Object.assign(new Error('HTTP '+r.status),{live:true});return r.json();}).then(d=>{
   const un=d.cards.filter(c=>c.status==='unscheduled'&&!c.manual_only).length;
   const per=t=>d.cards.filter(c=>c.type===t).length;
   const nx=(d.upcoming&&d.upcoming.news||[])[0];
-  document.getElementById('chip-sched').innerHTML='<b>'+un+'</b> unscheduled'+(nx?(' · next auto '+nx.replace(/ Europe\/Warsaw/,'')):'');
-  for(const t of ['fluxogram','news','slides','article','tutorial']){
+  document.getElementById('chip-sched').innerHTML='<b>'+un+'</b> unscheduled'+(nx?(' · next auto '+nx.replace(/ [A-Za-z_]+\/[A-Za-z_\/]+$/,'')):'');
+  for(const t of ['fluxogram','news','slides','article','tutorial','quote']){
     const n=per(t); if(n)document.getElementById('chip-'+t).innerHTML='<b>'+n+'</b> in queue';
   }
   document.getElementById('sub').innerHTML='server live · '+d.cards.length+' assets indexed · <b>one door</b>';
-}).catch(()=>{ document.getElementById('sub').textContent='static mode — double-click Studio.command for the live server'; });
+}).catch(e=>{ document.getElementById('sub').textContent=e.live?('server up but /api/data failed ('+e.message+') — check the Studio terminal'):'static mode — double-click Studio.command for the live server'; });
 </script>
 </body>
 </html>

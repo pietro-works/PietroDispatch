@@ -316,6 +316,7 @@
     <button class="ctrl-btn" id="szBtn">Show profile-photo guide</button>
     <button class="ctrl-btn" id="dl2x">Download 2× (3168×792)</button>
     <button class="ctrl-btn" id="dl1x">Download 1× (1584×396)</button>
+    <a class="ctrl-btn" href="linkedin-banner.dark.html" style="text-decoration:none">Switch to dark</a>
     <span class="meta" id="dlStatus"></span>
   </div>
 
@@ -491,5 +492,17 @@
     document.getElementById('dl2x').addEventListener('click', () => exportBanner(2, '2× · 3168×792'));
     document.getElementById('dl1x').addEventListener('click', () => exportBanner(1, '1× · 1584×396'));
   </script>
+<script>
+// floating back-to-Studio arrow — preview chrome only, never on the render path
+(function(){
+  if(new URLSearchParams(location.search).has('headless')||navigator.webdriver===true||/\bHeadless/.test(navigator.userAgent||''))return;
+  if(location.protocol!=='http:'&&location.protocol!=='https:')return;
+  var a=document.createElement('a');a.id='pw-back';a.href='/';a.title='Back to Studio';a.textContent='\u2190';
+  a.style.cssText="position:fixed;top:16px;left:16px;z-index:600;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font:500 17px/1 'DM Mono',monospace;color:#9fb0d0;text-decoration:none;background:rgba(6,10,19,.72);border:1px solid rgba(120,200,255,.3);border-radius:50%;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:.15s;";
+  a.onmouseenter=function(){a.style.color='#04121a';a.style.background='#39e8ff';a.style.borderColor='#39e8ff';};
+  a.onmouseleave=function(){a.style.color='#9fb0d0';a.style.background='rgba(6,10,19,.72)';a.style.borderColor='rgba(120,200,255,.3)';};
+  document.body.appendChild(a);
+})();
+</script>
 </body>
 </html>

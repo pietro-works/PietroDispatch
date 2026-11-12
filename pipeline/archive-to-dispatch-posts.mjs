@@ -10,10 +10,10 @@
  *   tutorial    -> tutorial-NNN.png, bg-tutorial-NNN.png,    caption-tutorial-NNN.txt
  *   fluxogram   -> pietro-fluxo-NNN.png, pietro-fluxo-NNN.json (spec, re-renderable), caption-pietro-fluxo-NNN.txt
  *
- * NNN is the next free integer for that type (max existing + 1), zero-padded to 3.
- * It COPIES (never moves): the structured queue folder stays put for Studio to post from.
- * Idempotency: pass --dry-run to preview. Re-running re-archives (new NNN); dedupe by not
- * re-passing folders you already archived.
+ * NNN is the next free integer for that type (max existing + 1), zero-padded to 3, claimed
+ * through claimIndex. It COPIES (never moves): the queue folder stays put for Studio to post from.
+ * Idempotent: the first archive stamps meta.number into the delivery's meta.json and a re-run
+ * reuses it, overwriting <prefix>-NNN.* in place (PACS0006). --dry-run previews.
  *
  * Usage:
  *   node archive-to-dispatch-posts.mjs <delivery-folder> [--type news|slides|article|tutorial|fluxo] [--archive <dir>] [--dry-run]
@@ -47,13 +47,20 @@ const exists = async (p) => { try { await stat(p); return true; } catch { return
 // validate-contract.mjs, scan-assets.mjs, this detectType, modules.json — AGENTS.md (known sites, not exhaustive)
 async function detectType(folder) {
   const names = await readdir(folder);
-  if (names.includes('spec.json') && names.includes('fluxogram.png')) return 'fluxo';
-  if (names.includes('tutorial.png')) return 'tutorial';   // PACS0001 — tutorial folder marker — AGENTS.md (known sites, not exhaustive)
-  if (names.includes('slides.pdf')) return 'slides';
-  if (names.some((n) => /^banner-[12]\.png$/.test(n))) return 'article';
-  if (names.some((n) => /^post-[12]\.png$/.test(n))) return 'news';
-  if (names.some((n) => /^tutorial-\d+\.png$/.test(n)) || names.some((n) => /^post-\d+\.png$/.test(n))) return 'tutorial';
-  throw new Error(`cannot detect asset type in ${folder}`);
+  const has = (n) => names.includes(n);
+  // news first, by folder name or variation files, exactly as validate-contract.mjs routes candidate-*
+  if (/^candidate-/.test(basename(folder)) || names.some((n) => /^post-[12]\.png$/.test(n))) return 'news';
+  // same four content markers and the same precedence as validate-contract.mjs main(); a folder with
+  // more than one marker is a contract violation there, so it is refused here instead of guessed
+  const signals = [
+    ['fluxo', has('fluxogram.png')],
+    ['tutorial', has('tutorial.png') || names.some((n) => /^tutorial-\d+\.png$/.test(n))],   // PACS0001 — tutorial folder marker — AGENTS.md (known sites, not exhaustive)
+    ['article', has('banner-1.png') || has('banner-2.png')],
+    ['slides', has('slides.pdf')],
+  ].filter(([, on]) => on).map(([t]) => t);
+  if (signals.length > 1) throw new Error(`mixed folder ${folder}: markers for ${signals.join(' + ')}; fix the delivery or pass --type`);
+  if (signals.length === 1) return signals[0];
+  throw new Error(`cannot detect asset type in ${folder} (no fluxogram.png / tutorial.png / banner-N.png / slides.pdf / post-N.png); pass --type`);
 }
 
 const pad = (n) => String(n).padStart(3, '0');

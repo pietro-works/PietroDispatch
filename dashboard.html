@@ -143,16 +143,23 @@ let DATA={cards:[],upcoming:{},calendar:[],plan:[]};
 const placements=new Map();   // slotKey "y-m-d-h" -> asset_id
 const $=(id)=>document.getElementById(id);
 const byId=()=>new Map(DATA.cards.map(c=>[c.asset_id,c]));
-function pillLabel(c){if(c.manual_only)return 'Manual upload';return c.status==='unscheduled'?'Unscheduled':(c.status==='scheduled'||c.status==='verified')?((c.slot_local||'').replace(/ Europe\/Warsaw/,'').replace(/^\d{4}-/,'')):c.status==='pending'?'Booking…':'Failed';}
-function fmt(s){return (s||'').replace(/ Europe\/Warsaw/,'');}
+function pillLabel(c){if(c.manual_only)return 'Manual upload';return c.status==='unscheduled'?'Unscheduled':(c.status==='scheduled'||c.status==='verified')?(fmt(c.slot_local).replace(/^\d{4}-/,'')):c.status==='pending'?'Booking…':'Failed';}
+function fmt(s){return (s||'').replace(/ [A-Za-z_]+\/[A-Za-z_\/]+$/,'');}
 function keyOf(y,m,d,h){return y+'-'+m+'-'+d+'-'+h;}
-function dayList(){ const out=[]; const now=new Date();
-  for(let i=0;i<7;i++){ out.push(new Date(now.getFullYear(),now.getMonth(),now.getDate()+i)); } return out; }
-function slotDate(y,m,d,h){ return new Date(y,m-1,d,h,0,0); }
-function bookedMap(){ // slotKey -> live booking, using local wall time of slot_iso
+// The week grid runs on the STUDIO timezone (db/slots.json), never the browser's: the server reads
+// a dropped {y,m,d,h} in that zone, so a browser in another zone would book every card shifted.
+// Same algorithm as slot-engine.mjs partsInZone / zonedLocalToUtcIso.
+function TZ(){ return DATA.timezone||DATA.tz||'Europe/Warsaw'; }
+function partsInZone(date){ const v=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:TZ(),hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})
+  .formatToParts(date).filter(p=>p.type!=='literal').map(p=>[p.type,Number(p.value)])); return {y:v.year,m:v.month,d:v.day,h:v.hour,mi:v.minute,s:v.second}; }
+function zonedToMs(y,m,d,h){ let g=Date.UTC(y,m-1,d,h,0,0); const want=g;
+  for(let i=0;i<5;i++){ const p=partsInZone(new Date(g)); const delta=Date.UTC(p.y,p.m-1,p.d,p.h,p.mi,p.s)-want; if(!delta)break; g-=delta; } return g; }
+function dayList(){ const t=partsInZone(new Date()); const out=[];
+  for(let i=0;i<7;i++){ const u=new Date(Date.UTC(t.y,t.m-1,t.d+i)); out.push({y:u.getUTCFullYear(),m:u.getUTCMonth()+1,d:u.getUTCDate(),dow:u.getUTCDay(),today:i===0}); } return out; }
+function bookedMap(){ // slotKey -> live booking, keyed by the slot's wall time in the studio timezone
   const m=new Map(); const LIVE=new Set(['pending','scheduled','verified']);
-  for(const b of (DATA.calendar||[])){ if(!LIVE.has(b.status))continue; const t=new Date(b.slot_iso);
-    m.set(keyOf(t.getFullYear(),t.getMonth()+1,t.getDate(),t.getHours()),b); }
+  for(const b of (DATA.calendar||[])){ if(!LIVE.has(b.status))continue; const p=partsInZone(new Date(b.slot_iso));
+    m.set(keyOf(p.y,p.m,p.d,p.h),b); }
   return m; }
 
 function draw(){
@@ -185,7 +192,9 @@ function drawWeek(){
   const tray=$('tray'); tray.innerHTML='';
   const placed=new Set(placements.values());
   for(const c of DATA.cards){
-    if(c.manual_only||c.status!=='unscheduled'||placed.has(c.asset_id))continue;
+    // failed bookings never reached LinkedIn as live posts, so they go back in the tray to re-plan
+    if(c.manual_only||(c.status!=='unscheduled'&&c.status!=='failed')||placed.has(c.asset_id))continue;
+    if(filter!=='all'&&c.type!==filter)continue;   // type chips narrow the tray too (135 quotes otherwise bury it)
     const t=document.createElement('div'); t.className='tchip'; t.draggable=LIVEMODE; t.dataset.id=c.asset_id;
     t.innerHTML=(c.thumb_path?'<img alt="" src="'+c.thumb_path+'">':'')+'<div class="tt"><span class="ty">'+c.type+'</span></div>';
     t.querySelector('.tt').appendChild(document.createTextNode(c.title||c.asset_id));
@@ -198,16 +207,16 @@ function drawWeek(){
   const dn=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   wk.appendChild(document.createElement('div'));
   for(const d of days){ const h=document.createElement('div');
-    h.className='whead'+(d.toDateString()===new Date().toDateString()?' today':'');
-    h.innerHTML=dn[d.getDay()]+'<b>'+(d.getMonth()+1)+'/'+d.getDate()+'</b>'; wk.appendChild(h); }
+    h.className='whead'+(d.today?' today':'');
+    h.innerHTML=dn[d.dow]+'<b>'+d.m+'/'+d.d+'</b>'; wk.appendChild(h); }
   const cardsById=byId();
   for(const h of HOURS){
     const lab=document.createElement('div'); lab.className='hlab'; lab.textContent=String(h).padStart(2,'0')+':00'; wk.appendChild(lab);
     for(const d of days){
-      const y=d.getFullYear(),mo=d.getMonth()+1,dd=d.getDate();
+      const y=d.y,mo=d.m,dd=d.d;
       const key=keyOf(y,mo,dd,h);
       const cell=document.createElement('div'); cell.className='cell'; cell.dataset.key=key;
-      const past=slotDate(y,mo,dd,h).getTime() < now+30*60e3;
+      const past=zonedToMs(y,mo,dd,h) < now+30*60e3;
       const bk=booked.get(key);
       if(bk){
         const s=document.createElement('div'); s.className='slotchip booked';
@@ -263,7 +272,7 @@ function seedPlanFromServer(){
   placements.clear();
   for(const p of (DATA.plan||[])){ const t=new Date(p.slot_iso); if(isNaN(t))continue;
     if(t.getTime()<Date.now())continue;
-    placements.set(keyOf(t.getFullYear(),t.getMonth()+1,t.getDate(),t.getHours()),p.asset_id); }
+    const z=partsInZone(t); placements.set(keyOf(z.y,z.m,z.d,z.h),p.asset_id); }
 }
 $('tab-q').onclick=()=>{view='q';$('tab-q').classList.add('on');$('tab-w').classList.remove('on');$('view-q').style.display='';$('view-w').style.display='none';drawBar();};
 $('tab-w').onclick=()=>{view='w';$('tab-w').classList.add('on');$('tab-q').classList.remove('on');$('view-w').style.display='';$('view-q').style.display='none';drawBar();};

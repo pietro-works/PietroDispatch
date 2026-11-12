@@ -23,7 +23,7 @@ PACS0001:
   fails_silently: "Studio's scanner skips the delivery, or the validator classifies it as the wrong type and fails it against another type's contract; the asset never enters the queue and nothing errors"
   justification: "five independent sites key off the same delivery type and none is derived from the others, so a type wired into four of them looks finished while its assets silently never reach the queue"
   kind: "registry"
-  notes: "slides, article, fluxogram and tutorial folders all share the <DATE>-<slug> name and are told apart only by contents (slides.pdf, banner-1.png, fluxogram.png, tutorial.png). Any new type on that name shape must extend the content sniff in BOTH validate-contract.mjs and detectType. Tutorial fully wired 2026-07-21."
+  notes: "slides, article, fluxogram and tutorial folders all share the <DATE>-<slug> name and are told apart only by contents (slides.pdf, banner-1.png, fluxogram.png, tutorial.png). Any new type on that name shape must extend the content sniff in BOTH validate-contract.mjs and detectType. Tutorial fully wired 2026-07-21. Since 2026-11-12 detectType uses the validator's four markers in the same precedence and REFUSES a folder with more than one marker or none (pass --type), instead of guessing; the old post-NN.png -> tutorial fallback archived marker-less slides decks as tutorials."
 
 PACS0002:
   anchor: "renderer/fluxogram.html:HEADLESS"
@@ -73,16 +73,17 @@ PACS0005:
   fails_silently: "a concurrent reader loads a truncated plan.json or assets.json and sees a partial or invalid queue"
   justification: "plan.json and assets.json are read by Studio, dashboard-data and publish while another process rewrites them, and a plain writeFile leaves a window where the file on disk is incomplete"
   kind: "determinism"
-  notes: "studio-server and scan-assets are the writers; dashboard-data and publish are readers today. Any NEW write path to db/*.json must go through writeJsonAtomic (tmp+rename), never writeFile in place."
+  notes: "studio-server, scan-assets and dashboard-data (db/dashboard.json, Studio's static fallback) are the writers; publish is a reader of plan/assets and writes calendar.json through its own tmp+rename helper. Any NEW write path to db/*.json must go through writeJsonAtomic (tmp+rename), never writeFile in place."
 
 PACS0006:
   anchor: "pipeline/archive-to-dispatch-posts.mjs:archiveOne"
   sync_with:              # KNOWN sites, not exhaustive — grep for more before you finish
     - "tools/scan-assets.mjs"
+    - "pipeline/backfill-archive-numbers.mjs"
   fails_silently: "re-archiving a delivery mints a duplicate under a new number, or the slides LinkedIn document title loses its #NNN"
   justification: "the archive writes meta.number and scan-assets reads that same field to build the document title, so producer and consumer are coupled through a key neither side validates"
   kind: "message-contract"
-  notes: "On first archive the assigned number is stamped into the delivery meta.json; a re-archive reuses it and overwrites <prefix>-NNN.* in place. scan-assets reads meta.number for the title Pietro.works IN_THE_LOOP.MD #NNN."
+  notes: "On first archive the assigned number is stamped into the delivery meta.json; a re-archive reuses it and overwrites <prefix>-NNN.* in place. scan-assets reads meta.number for the title Pietro.works IN_THE_LOOP.MD #NNN. Folders archived before numbers were stamped were backfilled 2026-11-12 by pipeline/backfill-archive-numbers.mjs (sha256 match against the archived copy, 42 stamped, 0 ambiguous); rerun it dry-run if a queue folder ever shows up without a number."
 
 PACS0007:
   anchor: "tools/publish.mjs:withCalendarLock"
@@ -93,7 +94,7 @@ PACS0007:
   fails_silently: "a CLI publish and a Studio apply-plan interleave calendar writes, losing bookings or double-scheduling the same asset on LinkedIn"
   justification: "two independent entrypoints write db/calendar.json and the LinkedIn side effect happens before the write, so an interleaved run can post the same asset twice with nothing reporting an error"
   kind: "convention"
-  notes: "The schedule loop holds an exclusive calendar.json.lock and re-reads the calendar before each post, skipping any asset another run already scheduled. tools/publish.mjs and tools/linkedin-core.mjs are deliberately untracked (held out of the public repo); the invariant still applies locally."
+  notes: "The schedule loop holds an exclusive calendar.json.lock and re-reads the calendar before each post, skipping any asset another run already scheduled. tools/publish.mjs and tools/linkedin-core.mjs are deliberately untracked (held out of the public repo); the invariant still applies locally. Since 2026-11-12 apply, apply-plan and unschedule each hold the lock across read -> book -> LinkedIn -> write (dry-run reads without it), and scheduleBookings flips any booking that never reached scheduleOne to failed in a finally block, so a dead run cannot leave pending rows that block the asset and slot forever. Tested with a stubbed linkedin-core (happy path, login fail, Chrome fail, mid-run throw, concurrent apply-plan, concurrent unschedule)."
 
 PACS0008:
   anchor: "renderer/news.mjs:suppressEditorChrome"
@@ -115,10 +116,13 @@ PACS0009:
     - "tools/publish.mjs"
     - "db/slots.json"
     - "renderer/quote.mjs"
-  fails_silently: "an already-posted quote re-enters the schedulable queue and is posted twice, or a pending quote silently drops out of assets.json because its caption heading no longer parses"
-  justification: "scanQuotes takes posted-state from the legacy quote scheduler's queue.tsv (status scheduled|skipped = live) and captions from linkedin-posts.md '## Post NNN' headings, two files owned by a tool Studio no longer runs, with no check that either still means what the scanner assumes"
+    - "tools/studio-server.mjs"
+    - "../pietro.works/gen/quote/tools/linkedin-native-scheduler.mjs"
+    - "../pietro.works/quotes/tools/linkedin-native-scheduler.mjs"
+  fails_silently: "a quote posted by the retired legacy scheduler re-enters the schedulable queue and is posted twice, or a quote silently drops out of assets.json because its caption heading no longer parses or its image is in another folder"
+  justification: "scanQuotes takes pre-Studio posted-state from the frozen legacy queue.tsv (status scheduled|skipped) and captions from linkedin-posts.md '## Post NNN' headings, two files no running tool writes any more, with no check that either still means what the scanner assumes"
   kind: "message-contract"
-  notes: "renderer/quote.mjs writes that exact pietro-quote-NNN.png name and scanQuotes finds images only by it, so a rename on either side drops every quote from assets.json with no error. Quotes are a flat library (assets/linkedin-images-2160/pietro-quote-NNN.png), not a delivery folder, so they sit outside PACS0001's detectType/validate-contract/modules.json sites. Only status 'pending' rows become assets; 001-045 are posted. Once Studio books a quote in calendar.json, publish.mjs' live-booking check is the second guard against a double post. Schedule via apply-plan into explicit slots; slots.json has no managed quote pool by design (even-quote is managed:false)."
+  notes: "Since 2026-11-12 scanQuotes walks every quotes.tsv row; a row becomes an asset when its image pietro-quote-NNN.png is in assets/linkedin-images-2160 (quote.mjs DEFAULT_OUT) and linkedin-posts.md has its ## Post NNN caption; missing either is logged with the fix. The legacy queue.tsv is FROZEN as the record of quotes posted before Studio (scheduled|skipped never return). The legacy scheduler and exporter (both copies, gen/quote and quotes/) are retired with a hard exit 2 at import time; all quote bookings go through Studio into db/calendar.json, and publish.mjs' live-booking check guards double posts. studio-server aliases /renderer/quotes.tsv to the same quotes.tsv. Quotes are a flat library, not a delivery folder, so they sit outside PACS0001. slots.json has no managed quote pool by design (even-quote is managed:false); schedule via apply-plan."
 
 PACS0010:
   anchor: "renderer/tutorial.mjs:inject"
@@ -128,6 +132,11 @@ PACS0010:
     - "renderer/article.mjs"
     - "renderer/slides.mjs"
     - "renderer/fluxogram.mjs"
+    - "renderer/quote.mjs"
+    - "renderer/quote.html"
+    - "renderer/linkedin-banner.dark.html"
+    - "renderer/linkedin-banner.light.html"
+    - "tools/studio-server.mjs"
     - ".claude/skills/tutorial/SKILL.md"
     - "../pietro-enterprise/skills/pipeline/SKILL.md"
   fails_silently: "a renderer gains or loses a spec field, glyph, connector or fit rule and the capability map keeps describing the old toolbox, so every future post is designed from a stale or incomplete list and the new lever is never used"

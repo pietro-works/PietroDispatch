@@ -7,7 +7,9 @@
  * is named pietro-quote-NNN.png so tools/scan-assets.mjs (scanQuotes) picks it up unchanged.
  *
  * Usage:
- *   node renderer/quote.mjs --out <dir> [--tsv <quotes.tsv>] [--ids all|1-5,9] [--force] [--chrome <path>]
+ *   node renderer/quote.mjs [--out <dir>] [--tsv <quotes.tsv>] [--ids all|1-5,9] [--force] [--batch 30] [--chrome <path>]
+ *
+ * --out defaults to pietro-works-env/assets/linkedin-images-2160, the library Studio scans.
  *
  * quotes.tsv: header row, then `id<TAB>quote<TAB>highlight`. Default tsv is the quote library at
  * ../../pietro.works/gen/quote/quotes.tsv. The page is served from this folder with /quotes.tsv
@@ -23,13 +25,15 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_TSV = resolve(HERE, '../../pietro.works/gen/quote/quotes.tsv');
+// PACS0009 — the library scanQuotes indexes; rendering anywhere else never reaches Studio — AGENTS.md (known sites, not exhaustive)
+const DEFAULT_OUT = resolve(HERE, '../../../assets/linkedin-images-2160');
 const SIDE = 1080;
 const OUT_SIDE = 2160;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { out: null, tsv: DEFAULT_TSV, ids: 'all', force: false, chrome: null, batch: 30 };
+  const o = { out: DEFAULT_OUT, tsv: DEFAULT_TSV, ids: 'all', force: false, chrome: null, batch: 30 };
   for (let i = 0; i < a.length; i += 1) {
     if (a[i] === '--out') o.out = a[++i];
     else if (a[i] === '--tsv') o.tsv = resolve(a[++i]);
@@ -39,7 +43,6 @@ function parseArgs() {
     else if (a[i] === '--batch') o.batch = Number(a[++i]);
     else throw new Error(`Unknown argument: ${a[i]}`);
   }
-  if (!o.out) throw new Error('Required: --out <dir>');
   return o;
 }
 

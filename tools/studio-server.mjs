@@ -10,6 +10,7 @@
  *   POST /api/refresh           re-run scan-assets.mjs, then return fresh data
  *   POST /api/plan              save week placements to db/plan.json (slots computed server-side)
  *   POST /api/schedule          save plan, then spawn publish.mjs apply-plan (LinkedIn Chrome)
+ *   POST /api/render            render a fluxogram / slides / tutorial spec into dispatch-posts
  *   GET  /api/run               status + log of the current/last schedule run
  *
  * Placements arrive as { asset_id, local: { y, m, d, h } } in the studio timezone;
@@ -47,7 +48,14 @@ const MOUNTS = [
   { prefix: '/queue/',    root: resolve(ROOT, '..', '..', 'queue') },
 ];
 
-const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.pdf': 'application/pdf' };
+// single-file aliases: quote.html fetches quotes.tsv beside itself, and the library lives in the quote repo
+const QUOTES_TSV = resolve(ROOT, '..', 'pietro.works', 'gen', 'quote', 'quotes.tsv');
+const ALIASES = { '/renderer/quotes.tsv': QUOTES_TSV };
+// the static root is the repo, so keep source, data and VCS out of reach; Studio pages only need
+// db/dashboard.json (static fallback) and db/thumbs/ from db/
+const DENY = [/^\/\./, /^\/node_modules\//, /^\/tools\//, /^\/pipeline\//, /^\/work\//, /^\/db\/(?!dashboard\.json$|thumbs\/)/];
+
+const MIME = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.avif': 'image/avif', '.svg': 'image/svg+xml', '.pdf': 'application/pdf', '.tsv': 'text/tab-separated-values; charset=utf-8', '.woff2': 'font/woff2' };
 
 const run = { proc: null, log: '', exitCode: null, startedAt: null };
 
@@ -63,7 +71,7 @@ let renderBusy = false;
 // not a second local scan-max, so a Studio render and a CLI archive can't mint the same NNN — AGENTS.md (known sites, not exhaustive)
 async function renderKind(kind, spec) {
   const k = RENDER_KINDS[kind];
-  if (!k) throw new Error('unsupported kind — news and article render through the pipeline');
+  if (!k) throw new Error('unsupported kind — news, article and quote render through their CLI drivers');
   const { nnn, lock } = await claimIndex(ARCHIVE_DIR, k.prefix);
   const name = `${k.prefix}-${nnn}`;
   try {
@@ -124,7 +132,8 @@ async function loadPlan() {
 }
 
 async function apiData() {
-  const [dashboard, calendar, plan, slots] = await Promise.all([buildDashboard(120), loadCalendar(), loadPlan(), loadSlots()]);
+  // no card limit: assets sort by date and undated quotes sit last, so any cap hides the whole quote library
+  const [dashboard, calendar, plan, slots] = await Promise.all([buildDashboard(Infinity), loadCalendar(), loadPlan(), loadSlots()]);
   return { ...dashboard, calendar, plan, tzNowIso: new Date().toISOString(), timezone: slots.timezone };
 }
 
@@ -165,6 +174,17 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
     const path = url.pathname;
 
+    // POSTs start renders and LinkedIn runs: accept only JSON from Studio's own origin, so a
+    // web page in another tab cannot fire a no-cors text/plain POST at /api/schedule
+    if (req.method === 'POST') {
+      const origin = req.headers.origin;
+      const host = req.headers.host || '';
+      const sameOrigin = !origin || origin === `http://${host}`;
+      if (!sameOrigin || !(req.headers['content-type'] || '').startsWith('application/json')) {
+        return send(res, 403, { error: 'POST must be application/json from the Studio origin' });
+      }
+    }
+
     if (path === '/api/data' && req.method === 'GET') return send(res, 200, await apiData());
 
     if (path === '/api/refresh' && req.method === 'POST') {
@@ -195,12 +215,6 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { ok: true, planned: rows.length, rejected });
     }
 
-    if (path === '/api/next-name' && req.method === 'GET') {
-      const k = RENDER_KINDS[url.searchParams.get('kind')];
-      if (!k) return send(res, 400, { error: 'unknown kind' });
-      return send(res, 200, { name: await nextName(k.prefix) });
-    }
-
     if (path === '/api/render' && req.method === 'POST') {
       if (renderBusy) return send(res, 409, { error: 'a render is already in progress' });
       renderBusy = true;
@@ -219,6 +233,13 @@ const server = createServer(async (req, res) => {
 
     // static files, path-confined to the studio folder or an allowed sibling mount
     const rel = decodeURIComponent(path) === '/' ? '/index.html' : decodeURIComponent(path);
+    if (ALIASES[rel]) {
+      const info = await stat(ALIASES[rel]).catch(() => null);
+      if (!info) { res.writeHead(404); return res.end(); }
+      res.writeHead(200, { 'Content-Type': MIME[extname(rel)] || 'application/octet-stream', 'Content-Length': info.size, 'Cache-Control': 'no-store' });
+      return createReadStream(ALIASES[rel]).pipe(res);
+    }
+    if (DENY.some((re) => re.test(rel))) { res.writeHead(403); return res.end(); }
     let base = ROOT, sub = rel;
     for (const m of MOUNTS) if (rel.startsWith(m.prefix)) { base = m.root; sub = `/${rel.slice(m.prefix.length)}`; break; }
     const file = resolve(base, `.${sub}`);

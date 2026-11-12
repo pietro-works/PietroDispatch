@@ -88,8 +88,12 @@ export function nextFreeSlot(type, calendar, slots, extraTaken = []) {
   const maxMs = nowMs + (slots.window_days || 89) * 86400e3;
   const taken = takenSet(calendar, extraTaken);
 
+  // step CALENDAR days in the studio zone, not 24h blocks: across a DST change a 24h step from a
+  // late-evening "now" lands two dates ahead and silently skips a day
+  const today = partsInZone(new Date(nowMs), tz);
   for (let d = 0; d <= (slots.window_days || 89) + 1; d += 1) {
-    const lp = partsInZone(new Date(nowMs + d * 86400e3), tz);
+    const u = new Date(Date.UTC(today.year, today.month - 1, today.day + d));
+    const lp = { year: u.getUTCFullYear(), month: u.getUTCMonth() + 1, day: u.getUTCDate() };
     const parity = lp.day % 2 === 0 ? 'even' : 'odd';
     if (parity !== pool.parity) continue;
     for (const t of pool.times) {
