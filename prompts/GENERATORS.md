@@ -108,6 +108,12 @@ Delivery: folder `<DATE>-<slug>` with `tutorial.png`, `caption.txt`, `meta.json`
 
 ---
 
+## 7. LinkedIn profile banner
+
+Output 1584x396 cover, plus a 2x at 3168x792. Hand-exported, no CLI: open `renderer/linkedin-banner.dark.html` or `renderer/linkedin-banner.light.html` in a browser and use the Download 1x / 2x buttons (4x supersample, unsharp mask). The page also has a profile-photo and mobile-crop guide toggle that is stripped from the export.
+
+Dark is the source of truth, built on the site's dark tokens (`#060a12`, cyan `#39e8ff`, green `#00ff99`, purple `#a855f7`) with the accent glow held at 60% of the first dark pass. Light is the original design, kept in step with it: same geometry, only colours differ. The mono subline is sized so its last word ends flush with the right edge of "existed" on the line above (19.45px). Headline is Clash Display 600 (the original PNG was DM Sans 700 only because Clash failed to load when it was made). The dot-matrix images beside the HTML must stay in `renderer/` or the texture silently disappears. Reference exports live in `docs/assets/linkedin-banner/`.
+
 ## What is exposed where
 
 - Studio can re-render fluxogram, slides and tutorial through `/api/render` (RENDER_KINDS). Only fluxogram and slides editors call it; the tutorial editor has no render-to-archive button. News, article and quote are not renderable from Studio.
