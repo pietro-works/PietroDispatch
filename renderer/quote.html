@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pietro.works — Quote Generator</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<style id="clash-display-faces">
+@font-face {
+  font-family: 'Clash Display';
+  src: url('https://cdn.fontshare.com/wf/2GQIT54GKQY3JRFTSHS4ARTRNRQISSAA/3CIP5EBHRRHE5FVQU3VFROPUERNDSTDF/JTSL5QESUXATU47LCPUNHZQBDDIWDOSW.woff2') format('woff2');
+  font-weight: 500; font-display: swap; font-style: normal;
+}
+@font-face {
+  font-family: 'Clash Display';
+  src: url('https://cdn.fontshare.com/wf/FPDAZ2S6SW4QMSRIIKNNGTPM6VIXYMKO/5HNPQ453FRLIQWV2FNOBUU3FKTDZQVSG/Z3MGHFHX6DCTLQ55LJYRJ5MDCZPMFZU6.woff2') format('woff2');
+  font-weight: 600; font-display: swap; font-style: normal;
+}
+@font-face {
+  font-family: 'Clash Display';
+  src: url('https://cdn.fontshare.com/wf/BFBSY7LX5W2U2EROCLVVTQP4VS7S4PC3/IIUX4FGTMD2LK2VWD3RVTAS4SSMUN7B5/53RZKGODFYDW3QHTIL7IPOWTBCSUEZK7.woff2') format('woff2');
+  font-weight: 700; font-display: swap; font-style: normal;
+}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:rgb(236,238,242); --bg2:rgb(244,245,248); --bg3:rgb(252,252,253);
+    --ink:rgb(14,22,38); --muted:rgb(82,93,112); --dim:rgb(148,156,170);
+    --line:rgba(77,146,255,.10); --line-s:rgba(77,146,255,.22);
+    --cyan:#4d92ff; --green:#2adb61; --pink:rgb(139,92,246); --purple:#7c3aed;
+    --cyan-glow:rgba(77,146,255,.18); --green-glow:rgba(42,219,97,.15); --pink-glow:rgba(124,58,237,.15);
+    --rx-lg:22px; --rx-md:14px; --rx-sm:8px;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --grad-accent:linear-gradient(105deg, var(--cyan) 0%, var(--green) 50%, var(--purple) 100%);
+    --grad-bloom:linear-gradient(90deg, #b9fbff 0%, #c9ffe8 50%, #ffc3fb 100%);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ height:100%; overflow:hidden; }
+  body{
+    color:var(--ink);
+    font-family:"DM Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
+    background:
+      radial-gradient(ellipse 100% 100% at 50% 50%, transparent 48%, rgba(10,16,40,.42) 100%),
+      radial-gradient(ellipse 72% 76% at 10%  8%,  var(--cyan-glow), transparent 58%),
+      radial-gradient(ellipse 62% 66% at 92%  8%,  var(--pink-glow), transparent 58%),
+      radial-gradient(ellipse 66% 70% at 76% 96%,  var(--green-glow),  transparent 58%),
+      linear-gradient(150deg, #e4e8f0 0%, #dce0ea 54%, #d9dde8 100%);
+  }
+
+  /* ---------- fullscreen stage ---------- */
+  .stage-wrap{ position:fixed; inset:0; z-index:1; overflow:hidden; }
+  .stage{ position:absolute; top:50%; left:50%; width:1080px; height:1080px; transform-origin:center center; }
+
+  /* ---------- quote canvas ---------- */
+  .quote{
+    position:relative; width:1080px; height:1080px;
+    background:
+      radial-gradient(at 12% 4%, var(--cyan-glow), transparent 40%),
+      radial-gradient(at 90% 8%, var(--pink-glow), transparent 44%),
+      radial-gradient(at 78% 96%, var(--green-glow), transparent 48%),
+      linear-gradient(150deg, rgb(236,238,242) 0%, #e7eaf1 54%, #e2e6ee 100%);
+    overflow:hidden; isolation:isolate;
+    display:flex; flex-direction:column;
+    padding:96px 96px 92px;
+  }
+  .q-dots{
+    position:absolute; inset:0; z-index:0; pointer-events:none;
+    opacity:.5; filter:invert(1) contrast(2); mix-blend-mode:multiply;
+    background-image:
+      image-set("hero-dot-matrix-static.avif" 1x type("image/avif"),
+                "hero-dot-matrix-static.webp" 1x type("image/webp"),
+                "hero-dot-matrix-static.png" 1x type("image/png"));
+    background-position:50%; background-repeat:no-repeat; background-size:cover;
+    -webkit-mask-image:radial-gradient(150% 130% at 76% 22%, #000 0%, #000 38%, rgba(0,0,0,.5) 60%, transparent 84%);
+    mask-image:radial-gradient(150% 130% at 76% 22%, #000 0%, #000 38%, rgba(0,0,0,.5) 60%, transparent 84%);
+    -webkit-mask-size:100% 100%; mask-size:100% 100%;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  }
+  .q-amb{position:absolute; z-index:0; pointer-events:none; border-radius:999px; filter:blur(100px); opacity:.5;}
+  .q-amb.a{width:680px; height:680px; top:-300px; left:-220px; background:radial-gradient(circle, rgba(77,146,255,.22), transparent 60%);}
+  .q-amb.b{width:560px; height:560px; top:-220px; right:-160px; background:radial-gradient(circle, rgba(124,58,237,.20), transparent 60%);}
+  .q-amb.c{width:600px; height:600px; bottom:-340px; right:-120px; background:radial-gradient(circle, rgba(42,219,97,.16), transparent 60%);}
+  .q-slab{
+    position:absolute; z-index:1; pointer-events:none; border-radius:34px;
+    border:1px solid rgba(255,255,255,.6);
+    background:linear-gradient(150deg, rgba(255,255,255,.5), rgba(255,255,255,.16));
+    box-shadow:inset 0 1px rgba(255,255,255,.9), 0 40px 90px -40px rgba(15,23,42,.22);
+    -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
+  }
+  .q-slab.s1{width:430px; height:300px; right:-90px; top:128px; transform:rotate(11deg); opacity:.55;}
+  .q-slab.s2{width:300px; height:300px; left:-120px; bottom:150px; transform:rotate(-14deg); opacity:.4;}
+  .q-ghost{
+    position:absolute; z-index:1; pointer-events:none;
+    right:-30px; top:188px; transform:rotate(11deg);
+    font-family:"DM Mono",monospace; font-size:15px; line-height:1.9; color:rgba(77,146,255,.16);
+    text-align:left; opacity:.9; filter:blur(.3px);
+    -webkit-mask-image:linear-gradient(180deg,#000,transparent);
+    mask-image:linear-gradient(180deg,#000,transparent);
+  }
+
+  /* ---------- top row ---------- */
+  .q-top{
+    position:relative; z-index:5;
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+  }
+  .q-eyebrow{
+    display:inline-flex; align-items:center; gap:10px; white-space:nowrap; flex:0 0 auto;
+    border:1px solid var(--line); background:color-mix(in srgb, var(--cyan) 6%, transparent);
+    border-radius:999px; padding:11px 22px;
+    font-size:18px; font-weight:500; color:var(--muted); letter-spacing:.01em;
+  }
+  .q-eyebrow .e-dot{width:9px; height:9px; border-radius:50%; background:var(--green); box-shadow:0 0 9px var(--green);}
+  .q-index{ font-family:"DM Mono",monospace; font-size:16px; color:var(--dim); letter-spacing:.06em; white-space:nowrap; flex:0 0 auto; }
+
+  /* ---------- quotation marks ---------- */
+  .q-mark{
+    position:relative; z-index:4;
+    font-family:"Clash Display",serif;
+    font-weight:700; font-size:300px; line-height:.7; height:150px;
+    margin:30px 0 0 -10px;
+    color:transparent;
+    background-image:var(--grad-accent);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:saturate(1.25) brightness(1.08)
+           drop-shadow(0 0 22px rgba(77,146,255,.22))
+           drop-shadow(0 10px 26px rgba(147,51,234,.18));
+    -webkit-user-select:none; user-select:none; pointer-events:none;
+  }
+  .q-mark::after{
+    content:"\201C"; position:absolute; left:0; top:0; z-index:-1;
+    background-image:var(--grad-bloom);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+    opacity:.6; filter:blur(22px) saturate(1.4) brightness(1.2); transform:scale(1.02);
+    animation:qGlow 3.6s ease-in-out infinite;
+  }
+  @keyframes qGlow{
+    0%,100%{opacity:.55; filter:blur(20px) saturate(1.35) brightness(1.16);}
+    50%{opacity:.95; filter:blur(30px) saturate(1.6) brightness(1.32);}
+  }
+
+  /* ---------- quote body ---------- */
+  .q-body{
+    position:relative; z-index:5;
+    flex:1; min-height:0; overflow:hidden;
+    display:flex; flex-direction:column; justify-content:center;
+    margin-top:-6px;
+  }
+  .q-text{
+    font-family:"Clash Display","DM Sans",sans-serif;
+    font-weight:600; font-size:60px; line-height:1.18; letter-spacing:-.012em;
+    color:var(--ink); text-wrap:pretty; max-width:880px;
+    outline:none;
+  }
+  .q-text:focus-visible{outline:2px dashed var(--line-s); outline-offset:14px; border-radius:6px;}
+  .q-text .hl{
+    color:transparent;
+    background-image:var(--grad-accent);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    filter:saturate(1.35) brightness(1.1);
+  }
+
+  /* ---------- author row ---------- */
+  .q-foot{
+    position:relative; z-index:5;
+    display:flex; align-items:center; gap:24px;
+    padding-top:34px; border-top:1px solid var(--line);
+  }
+  .q-photo{
+    width:125px; height:125px; flex:0 0 auto; border-radius:50%;
+    object-fit:cover; filter:drop-shadow(0 14px 30px rgba(15,23,42,.22));
+  }
+  .q-name{
+    font-family:"Clash Display","DM Sans",sans-serif;
+    font-weight:600; font-size:36px; line-height:1; letter-spacing:-.01em; color:var(--ink);
+    outline:none;
+  }
+  .q-role{
+    display:flex; align-items:center; gap:11px; flex-wrap:wrap;
+    font-family:"DM Mono",monospace; font-size:22px; color:var(--muted); letter-spacing:.01em;
+    outline:none; white-space:nowrap;
+  }
+  .q-who{display:flex; flex-direction:column; gap:5px; min-width:0; flex:1 1 auto;}
+  .q-role .sep{color:var(--dim);}
+  .q-role .wm{color:var(--ink);}
+  .q-role .wm sup{color:var(--cyan); font-size:.62em; top:-.5em; white-space:nowrap;}
+  .q-foot .q-close{
+    margin-left:auto; align-self:center;
+    font-family:"Clash Display",serif; font-weight:700; font-size:96px; line-height:1;
+    color:transparent;
+    background-image:linear-gradient(225deg, var(--purple) 0%, var(--cyan) 100%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    opacity:.5; -webkit-user-select:none; user-select:none; pointer-events:none;
+  }
+
+  /* ---------- image overlays ---------- */
+  .q-overlay{position:absolute; z-index:20; cursor:move; user-select:none;}
+  .q-overlay img{display:block; width:100%; height:auto; pointer-events:none; border-radius:4px;}
+  .q-overlay-del,.q-overlay-resize{position:absolute; opacity:0; transition:opacity .18s;}
+  .q-overlay:hover .q-overlay-del,.q-overlay:hover .q-overlay-resize{opacity:1;}
+  .q-overlay-del{
+    top:-11px; right:-11px; width:22px; height:22px; border-radius:50%;
+    background:#fff; border:1.5px solid rgba(200,50,50,.55);
+    color:#c00; font-size:15px; font-weight:700; line-height:20px;
+    text-align:center; cursor:pointer; z-index:1; box-shadow:0 2px 8px rgba(0,0,0,.18);
+  }
+  .q-overlay-resize{
+    bottom:-9px; right:-9px; width:20px; height:20px; border-radius:50%;
+    background:#fff; border:2px solid var(--cyan); cursor:se-resize; z-index:1;
+    box-shadow:0 2px 8px rgba(0,0,0,.18);
+  }
+
+  /* ---------- controls / dock ---------- */
+  .ctrl-group{
+    display:inline-flex; align-items:center; gap:10px;
+    border:1px solid var(--line); background:rgba(255,255,255,.5);
+    border-radius:999px; padding:7px 16px;
+  }
+  .ctrl-group label{font-family:"DM Mono",monospace; font-size:12px; color:var(--dim); white-space:nowrap;}
+  .meta{font-family:"DM Mono",monospace; color:var(--dim); font-size:13px;}
+  input[type=range]{accent-color:var(--cyan); width:128px;}
+  input[type=number].q-num-input{
+    font-family:"DM Mono",monospace; font-size:15px; font-weight:500;
+    color:var(--ink); background:transparent; border:none; outline:none;
+    width:42px; text-align:center;
+    -moz-appearance:textfield;
+  }
+  input[type=number].q-num-input::-webkit-inner-spin-button,
+  input[type=number].q-num-input::-webkit-outer-spin-button{-webkit-appearance:none; margin:0;}
+  .ctrl-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    border:1px solid var(--line-s); background:color-mix(in srgb, var(--cyan) 6%, transparent);
+    color:var(--ink); border-radius:999px; padding:9px 17px; font-size:13px; cursor:pointer;
+    font-family:inherit; transition:background .2s;
+  }
+  .ctrl-btn:hover{background:color-mix(in srgb, var(--cyan) 14%, transparent);}
+  .ctrl-btn.primary{background:var(--cyan); color:#fff; border-color:var(--cyan);}
+  .ctrl-btn.primary:hover{filter:brightness(1.08);}
+  .ctrl-btn.nav{padding:9px 14px; font-size:16px; line-height:1;}
+  .ctrl-btn.hl-btn{border-color:rgba(77,146,255,.32); background:rgba(77,146,255,.06); padding:9px 18px;}
+  .ctrl-btn.hl-btn:hover{background:rgba(77,146,255,.14);}
+  .ctrl-btn.hl-btn .g{
+    background-image:var(--grad-accent);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    font-weight:600;
+  }
+
+  /* ── glassmorphic dock ── */
+  .dock{
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    padding:14px 32px 28px;
+    display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:14px;
+    background:rgba(238,241,247,.72);
+    -webkit-backdrop-filter:blur(24px) saturate(1.5);
+    backdrop-filter:blur(24px) saturate(1.5);
+    border-top:1px solid rgba(255,255,255,.68);
+    box-shadow:0 -2px 32px rgba(15,23,42,.10), inset 0 1px rgba(255,255,255,.72);
+    transform:translateY(100%);
+    transition:transform .44s cubic-bezier(.22,1,.36,1);
+  }
+  .dock.open{transform:translateY(0);}
+</style>
+<script src="https://unpkg.com/html-to-image@1.11.13/dist/html-to-image.js"></script>
+</head>
+<body>
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <div class="quote" id="quote" data-screen-label="Quote Canvas">
+        <div class="q-amb a"></div>
+        <div class="q-amb b"></div>
+        <div class="q-amb c"></div>
+        <div class="q-slab s1"></div>
+        <div class="q-slab s2"></div>
+        <div class="q-ghost">async function review(asset){<br/>&nbsp;&nbsp;const ctx = await ingest(asset);<br/>&nbsp;&nbsp;return human.approve(ctx);<br/>}</div>
+        <div class="q-dots"></div>
+
+        <div class="q-top">
+          <div class="q-eyebrow"><span class="e-dot"></span><span id="eyebrowLabel" contenteditable="true" spellcheck="false"> FIELD_NOTES.MD</span></div>
+          <div class="q-index" id="qIndex">pietro.works &middot; 001</div>
+        </div>
+
+        <div class="q-mark">&#8220;</div>
+
+        <div class="q-body">
+          <div class="q-text" id="qtext" contenteditable="true" spellcheck="false"></div>
+        </div>
+
+        <div class="q-foot">
+          <img class="q-photo" src="pietro-portrait.png" alt="Pietro Impagliazzo"/>
+          <div class="q-who">
+            <div class="q-name" id="qname" contenteditable="true" spellcheck="false">Pietro Impagliazzo</div>
+            <div class="q-role" id="qrole" contenteditable="true" spellcheck="false"><span class="wm">Pietro<sup>.works</sup></span> <span class="sep">&middot;</span> AI workflow architect</div>
+          </div>
+          <div class="q-close">&#8221;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dock" id="dock">
+    <!-- quote navigation -->
+    <div class="ctrl-group">
+      <button class="ctrl-btn nav" id="prevBtn" title="Previous quote">&#9664;</button>
+      <input type="number" class="q-num-input" id="quoteNumInput" min="1" max="180" value="1"/>
+      <span class="meta" id="totalCount">/ 180</span>
+      <button class="ctrl-btn nav" id="nextBtn" title="Next quote">&#9654;</button>
+    </div>
+    <!-- size -->
+    <div class="ctrl-group">
+      <label>size</label>
+      <input type="checkbox" id="autoSize" checked title="auto-fit to largest size"/>
+      <label for="autoSize" style="font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;color:var(--muted)">auto</label>
+      <input type="range" id="sizeRange" min="38" max="78" step="1" value="78" style="transition:opacity .2s"/>
+      <span class="meta" id="sizeVal">auto</span>
+    </div>
+    <!-- accent -->
+    <div class="ctrl-group">
+      <label>accent</label>
+      <button class="ctrl-btn hl-btn" id="accentBtn"><span class="g">&#9672; Apply</span></button>
+      <button class="ctrl-btn" id="clearHlBtn">Clear</button>
+    </div>
+    <button class="ctrl-btn" id="addImgBtn">&#xFF0B; Add image</button>
+    <button class="ctrl-btn" id="resetBtn">&#8635; Reset</button>
+    <button class="ctrl-btn primary" id="dlBtn" style="display:none">&#8595; Download PNG</button>
+    <span id="actionHint" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--dim);opacity:0;transition:opacity .5s;pointer-events:none;display:inline-block;min-width:90px;text-align:center;"></span>
+  </div>
+  <input type="file" id="imgFileInput" accept="image/*" style="display:none;"/>
+
+  <script>
+    const SIDE = 1080;
+
+    /* ── stage scaling ── */
+    function fit(){
+      const s = Math.min(window.innerWidth, window.innerHeight) / SIDE;
+      document.getElementById('stage').style.transform = 'translate(-50%,-50%) scale('+s+')';
+    }
+    window.addEventListener('resize', fit);
+    fit();
+
+    /* ── TSV loader ── */
+    let quotes = [];
+    let currentIdx = parseInt(localStorage.getItem('pq-idx') || '0', 10);
+
+    async function loadTSV(){
+      try{
+        const res = await fetch('quotes.tsv');
+        const text = await res.text();
+        const lines = text.trim().split('\n').slice(1); // skip header
+        quotes = lines.map(function(line){
+          const cols = line.split('\t');
+          return { id: cols[0] || '', quote: cols[1] || '', highlight: cols[2] || '' };
+        });
+        document.getElementById('totalCount').textContent = '/ ' + quotes.length;
+        document.getElementById('quoteNumInput').max = quotes.length;
+        // restore last position
+        if(currentIdx >= quotes.length) currentIdx = 0;
+        renderQuote(currentIdx);
+      } catch(e){
+        console.error('Could not load quotes.tsv:', e);
+        document.getElementById('qtext').textContent = 'Could not load quotes.tsv — make sure this is served over HTTP.';
+      }
+    }
+
+    /* ── render quote n (0-indexed) ── */
+    function renderQuote(n){
+      if(!quotes.length) return;
+      n = Math.max(0, Math.min(quotes.length - 1, n));
+      currentIdx = n;
+      localStorage.setItem('pq-idx', String(n));
+
+      const q = quotes[n];
+      const displayNum = String(n + 1).padStart(3, '0');
+      document.getElementById('qIndex').textContent = 'pietro.works \u00b7 ' + displayNum;
+      document.getElementById('quoteNumInput').value = String(n + 1);
+
+      // build HTML: wrap highlight in .hl if present
+      const qt = document.getElementById('qtext');
+      let html = escapeHtml(q.quote);
+      if(q.highlight){
+        const esc = escapeHtml(q.highlight);
+        html = html.replace(esc, '<span class="hl">' + esc + '</span>');
+      }
+      qt.innerHTML = html;
+
+      // reset auto size
+      range.value = 78;
+      fitQuote();
+    }
+
+    function escapeHtml(s){
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── navigation ── */
+    document.getElementById('prevBtn').addEventListener('click', function(){
+      renderQuote(currentIdx - 1);
+    });
+    document.getElementById('nextBtn').addEventListener('click', function(){
+      renderQuote(currentIdx + 1);
+    });
+
+    const numInput = document.getElementById('quoteNumInput');
+    numInput.addEventListener('change', function(){
+      const v = parseInt(this.value, 10);
+      if(!isNaN(v)) renderQuote(v - 1);
+    });
+    numInput.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ this.blur(); const v = parseInt(this.value, 10); if(!isNaN(v)) renderQuote(v - 1); }
+      if(e.key === 'ArrowUp'){ e.preventDefault(); renderQuote(currentIdx - 1); }
+      if(e.key === 'ArrowDown'){ e.preventDefault(); renderQuote(currentIdx + 1); }
+    });
+
+    // keyboard arrows on document
+    document.addEventListener('keydown', function(e){
+      if(document.activeElement === numInput) return;
+      if(document.activeElement && document.activeElement.isContentEditable) return;
+      if(e.key === 'ArrowLeft' || e.key === 'ArrowUp'){ e.preventDefault(); renderQuote(currentIdx - 1); }
+      if(e.key === 'ArrowRight' || e.key === 'ArrowDown'){ e.preventDefault(); renderQuote(currentIdx + 1); }
+    });
+
+    /* ── size slider + auto-fit ── */
+    const range = document.getElementById('sizeRange');
+    const sizeVal = document.getElementById('sizeVal');
+    const autoCheck = document.getElementById('autoSize');
+
+    function updateSliderState(){
+      const isAuto = autoCheck.checked;
+      range.disabled = isAuto;
+      range.style.opacity = isAuto ? '0.35' : '1';
+      range.style.pointerEvents = isAuto ? 'none' : 'auto';
+    }
+    updateSliderState();
+    autoCheck.addEventListener('change', function(){ updateSliderState(); range.value = 78; fitQuote(); });
+
+    function fitQuote(){
+      const qt = document.getElementById('qtext');
+      const qb = qt && qt.parentElement;
+      if(!qt || !qb) return;
+      const cap = autoCheck.checked ? 78 : parseInt(range.value, 10);
+      let size = cap;
+      qt.style.fontSize = size + 'px';
+      let guard = 0;
+      while(qt.scrollHeight > qb.clientHeight && size > 22 && guard < 200){
+        size--; qt.style.fontSize = size + 'px'; guard++;
+      }
+      sizeVal.textContent = autoCheck.checked ? 'auto' : size + 'px';
+      if(!autoCheck.checked) range.value = size;
+    }
+    range.addEventListener('input', function(){ if(!autoCheck.checked) fitQuote(); });
+    document.getElementById('quote').addEventListener('input', function(e){
+      if(e.target.id === 'qtext'){ if(!autoCheck.checked) range.value = 78; fitQuote(); }
+    });
+    document.fonts.ready.then(fitQuote);
+
+    /* ── hint ── */
+    function showHint(msg){
+      const el = document.getElementById('actionHint');
+      el.textContent = msg; el.style.opacity = '1';
+      clearTimeout(window._hintT);
+      window._hintT = setTimeout(function(){ el.style.opacity = '0'; }, 2000);
+    }
+
+    /* ── reset: reload current quote from TSV ── */
+    document.getElementById('resetBtn').addEventListener('click', function(){
+      renderQuote(currentIdx); showHint('reset \u2713');
+    });
+
+    /* ── image overlays ── */
+    function getStageScale(){
+      const t = document.getElementById('stage').style.transform;
+      const m = t.match(/scale\(([\d.]+)\)/); return m ? parseFloat(m[1]) : 1;
+    }
+    function makeDraggable(el){
+      let active=false,sx,sy,sl,st;
+      el.addEventListener('mousedown',function(e){
+        if(e.target.classList.contains('q-overlay-resize')||e.target.classList.contains('q-overlay-del')) return;
+        active=true; sx=e.clientX; sy=e.clientY;
+        sl=parseInt(el.style.left)||0; st=parseInt(el.style.top)||0;
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove',function(e){
+        if(!active) return;
+        const sc=getStageScale();
+        el.style.left=(sl+(e.clientX-sx)/sc)+'px';
+        el.style.top=(st+(e.clientY-sy)/sc)+'px';
+      });
+      document.addEventListener('mouseup',function(){ active=false; });
+    }
+    function makeResizable(el,handle){
+      let active=false,sx,sw;
+      handle.addEventListener('mousedown',function(e){
+        active=true; sx=e.clientX; sw=el.offsetWidth;
+        e.preventDefault(); e.stopPropagation();
+      });
+      document.addEventListener('mousemove',function(e){
+        if(!active) return;
+        const sc=getStageScale();
+        el.style.width=Math.max(40,sw+(e.clientX-sx)/sc)+'px';
+      });
+      document.addEventListener('mouseup',function(){ active=false; });
+    }
+    function addOverlay(src){
+      const wrap=document.createElement('div'); wrap.className='q-overlay';
+      wrap.style.cssText='left:240px;top:240px;width:280px;';
+      const img=document.createElement('img'); img.src=src;
+      img.onload=function(){
+        const r=img.naturalHeight/img.naturalWidth, w=280;
+        wrap.style.left=Math.round((SIDE-w)/2)+'px';
+        wrap.style.top=Math.round((SIDE-w*r)/2)+'px';
+      };
+      const resH=document.createElement('div'); resH.className='q-overlay-resize';
+      const del=document.createElement('div'); del.className='q-overlay-del'; del.textContent='\u00d7';
+      del.addEventListener('click',function(){ wrap.remove(); });
+      wrap.appendChild(img); wrap.appendChild(resH); wrap.appendChild(del);
+      document.getElementById('quote').appendChild(wrap);
+      makeDraggable(wrap); makeResizable(wrap,resH);
+    }
+    const fileInput = document.getElementById('imgFileInput');
+    document.getElementById('addImgBtn').addEventListener('click',function(){ fileInput.click(); });
+    fileInput.addEventListener('change',function(e){
+      const f=e.target.files[0]; if(!f) return;
+      addOverlay(URL.createObjectURL(f)); fileInput.value='';
+    });
+
+    /* ── download button (HTTP only) ── */
+    (function waitHTI(){
+      if(typeof htmlToImage !== 'undefined'){
+        const isFile = location.protocol === 'file:';
+        const btn = document.getElementById('dlBtn');
+        if(isFile){
+          btn.style.display = ''; btn.textContent = '\u2b07 Download PNG';
+          btn.title = 'Serve via HTTP to enable'; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
+          btn.addEventListener('click',function(e){ e.preventDefault(); showHint('needs HTTP \u00b7 use fullscreen'); });
+        } else { btn.style.display = ''; }
+      } else { setTimeout(waitHTI, 200); }
+    })();
+
+    /* ── unsharp mask ── */
+    function gaussBlur(src,w,h,r){
+      const sig=r/2||.6,rad=Math.max(1,Math.ceil(r*2));
+      const k=new Float32Array(rad*2+1); let s=0;
+      for(let i=-rad;i<=rad;i++){const v=Math.exp(-(i*i)/(2*sig*sig));k[i+rad]=v;s+=v;}
+      for(let i=0;i<k.length;i++)k[i]/=s;
+      const t=new Float32Array(w*h*3),o=new Float32Array(w*h*3);
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        let cr=0,cg=0,cb=0;
+        for(let j=-rad;j<=rad;j++){let sx=Math.max(0,Math.min(w-1,x+j));
+          const wt=k[j+rad],si=(y*w+sx)*4;cr+=src[si]*wt;cg+=src[si+1]*wt;cb+=src[si+2]*wt;}
+        const ti=(y*w+x)*3;t[ti]=cr;t[ti+1]=cg;t[ti+2]=cb;
+      }
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        let cr=0,cg=0,cb=0;
+        for(let j=-rad;j<=rad;j++){let sy=Math.max(0,Math.min(h-1,y+j));
+          const wt=k[j+rad],si=(sy*w+x)*3;cr+=t[si]*wt;cg+=t[si+1]*wt;cb+=t[si+2]*wt;}
+        const oi=(y*w+x)*3;o[oi]=cr;o[oi+1]=cg;o[oi+2]=cb;
+      }
+      return o;
+    }
+    function unsharp(ctx,w,h,r,amt){
+      const img=ctx.getImageData(0,0,w,h),d=img.data,bl=gaussBlur(d,w,h,r);
+      for(let p=0,q=0;p<d.length;p+=4,q+=3){
+        d[p]=Math.max(0,Math.min(255,d[p]+amt*(d[p]-bl[q])));
+        d[p+1]=Math.max(0,Math.min(255,d[p+1]+amt*(d[p+1]-bl[q+1])));
+        d[p+2]=Math.max(0,Math.min(255,d[p+2]+amt*(d[p+2]-bl[q+2])));
+      }
+      ctx.putImageData(img,0,0);
+    }
+
+    /* ── export pipeline ── */
+    document.getElementById('dlBtn').addEventListener('click', async function(){
+      if(location.protocol==='file:') return;
+      const btn=this, node=document.getElementById('quote'), stage=document.getElementById('stage');
+      btn.textContent='… rendering'; btn.disabled=true;
+      const prevT=stage.style.transform, prevH=stage.style.height;
+      stage.style.transform='none'; stage.style.height=SIDE+'px';
+      const slabs=node.querySelectorAll('.q-slab');
+      slabs.forEach(function(el){ el.style.backdropFilter='none'; el.style.webkitBackdropFilter='none'; });
+      await document.fonts.ready; fitQuote();
+      await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
+      try{
+        const canvas=await htmlToImage.toCanvas(node,{
+          width:SIDE, height:SIDE, pixelRatio:2, cacheBust:false, style:{transform:'none'}
+        });
+        stage.style.transform=prevT; stage.style.height=prevH;
+        slabs.forEach(function(el){ el.style.backdropFilter=''; el.style.webkitBackdropFilter=''; });
+        unsharp(canvas.getContext('2d'),canvas.width,canvas.height,1.0,0.45);
+        const qNum = String(currentIdx+1).padStart(3,'0');
+        canvas.toBlob(function(blob){
+          const url=URL.createObjectURL(blob);
+          const a=document.createElement('a'); a.href=url;
+          a.download='pietro-quote-'+qNum+'.png';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function(){ URL.revokeObjectURL(url); },4000);
+          btn.textContent='\u2713 downloaded';
+          setTimeout(function(){ btn.textContent='\u2b07 Download PNG'; btn.disabled=false; },2400);
+        },'image/png');
+      }catch(e){
+        console.error(e);
+        stage.style.transform=prevT; stage.style.height=prevH;
+        slabs.forEach(function(el){ el.style.backdropFilter=''; el.style.webkitBackdropFilter=''; });
+        btn.textContent='\u2b07 Download PNG'; btn.disabled=false;
+        showHint(String(e).replace('Error:','').trim().slice(0,48));
+      }
+    });
+
+    /* ── accent selection ── */
+    function applyAccent(){
+      const sel=window.getSelection();
+      if(!sel||sel.rangeCount===0||sel.isCollapsed){ showHint('select text first'); return; }
+      const r=sel.getRangeAt(0);
+      const qt=document.getElementById('qtext');
+      if(!qt.contains(r.commonAncestorContainer)){ showHint('select text inside the quote'); return; }
+      let anc=r.commonAncestorContainer;
+      if(anc.nodeType===3) anc=anc.parentElement;
+      const existing=anc.closest&&anc.closest('.hl');
+      if(existing&&qt.contains(existing)){
+        existing.replaceWith(document.createTextNode(existing.textContent));
+        qt.normalize(); sel.removeAllRanges(); showHint('accent removed'); fitQuote(); return;
+      }
+      try{
+        const span=document.createElement('span'); span.className='hl';
+        r.surroundContents(span); sel.removeAllRanges(); showHint('accent applied \u2713');
+      }catch(e){
+        const safe=r.toString().replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        document.execCommand('insertHTML',false,'<span class="hl">'+safe+'</span>');
+        showHint('accent applied \u2713');
+      }
+      fitQuote();
+    }
+    document.getElementById('accentBtn').addEventListener('click', applyAccent);
+    document.getElementById('clearHlBtn').addEventListener('click', function(){
+      const qt=document.getElementById('qtext');
+      qt.querySelectorAll('.hl').forEach(function(s){ s.replaceWith(document.createTextNode(s.textContent)); });
+      qt.normalize(); showHint('accents cleared'); fitQuote();
+    });
+
+    /* ── glassmorphic dock ── */
+    const dock = document.getElementById('dock');
+    let _dockTimer;
+    document.addEventListener('mousemove', function(e){
+      const near = e.clientY > window.innerHeight - 80;
+      if(near){ clearTimeout(_dockTimer); dock.classList.add('open'); }
+      else if(!dock.matches(':hover')){ clearTimeout(_dockTimer); _dockTimer=setTimeout(function(){ dock.classList.remove('open'); },500); }
+    });
+    dock.addEventListener('mouseenter', function(){ clearTimeout(_dockTimer); dock.classList.add('open'); });
+    dock.addEventListener('mouseleave', function(){ clearTimeout(_dockTimer); _dockTimer=setTimeout(function(){ dock.classList.remove('open'); },480); });
+
+    /* ── init ── */
+    loadTSV();
+  </script>
+</body>
+</html>

@@ -114,10 +114,11 @@ PACS0009:
     - "../pietro.works/gen/quote/quotes.tsv"
     - "tools/publish.mjs"
     - "db/slots.json"
+    - "renderer/quote.mjs"
   fails_silently: "an already-posted quote re-enters the schedulable queue and is posted twice, or a pending quote silently drops out of assets.json because its caption heading no longer parses"
   justification: "scanQuotes takes posted-state from the legacy quote scheduler's queue.tsv (status scheduled|skipped = live) and captions from linkedin-posts.md '## Post NNN' headings, two files owned by a tool Studio no longer runs, with no check that either still means what the scanner assumes"
   kind: "message-contract"
-  notes: "Quotes are a flat library (assets/linkedin-images-2160/pietro-quote-NNN.png), not a delivery folder, so they sit outside PACS0001's detectType/validate-contract/modules.json sites. Only status 'pending' rows become assets; 001-045 are posted. Once Studio books a quote in calendar.json, publish.mjs' live-booking check is the second guard against a double post. Schedule via apply-plan into explicit slots; slots.json has no managed quote pool by design (even-quote is managed:false)."
+  notes: "renderer/quote.mjs writes that exact pietro-quote-NNN.png name and scanQuotes finds images only by it, so a rename on either side drops every quote from assets.json with no error. Quotes are a flat library (assets/linkedin-images-2160/pietro-quote-NNN.png), not a delivery folder, so they sit outside PACS0001's detectType/validate-contract/modules.json sites. Only status 'pending' rows become assets; 001-045 are posted. Once Studio books a quote in calendar.json, publish.mjs' live-booking check is the second guard against a double post. Schedule via apply-plan into explicit slots; slots.json has no managed quote pool by design (even-quote is managed:false)."
 
 PACS0010:
   anchor: "renderer/tutorial.mjs:inject"

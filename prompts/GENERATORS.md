@@ -2,7 +2,7 @@
 
 Read this FIRST, before choosing a format or structuring any post. It lists every lever each renderer exposes, so a post is designed from the full toolbox instead of the habitual subset. Specs below are what the headless drivers accept; the editors can do more in places and those gaps are flagged.
 
-Sources: audited against the code on 2026-10-28. Line refs are in renderer/ (`news.html`, `news.mjs`, `article.html`, `article.mjs`, `slides.html`, `slides.mjs`, `fluxogram.html`, `fluxogram.mjs`, `tutorial.html`, `tutorial.mjs`) and tools/export-quote-images.mjs in the quote repo.
+Sources: audited against the code on 2026-10-28. Line refs are in renderer/ (`news.html`, `news.mjs`, `article.html`, `article.mjs`, `slides.html`, `slides.mjs`, `fluxogram.html`, `fluxogram.mjs`, `tutorial.html`, `tutorial.mjs`) `quote.html`, `quote.mjs`.
 
 PACS0010 ties this file to the renderers: a new lever, field or format in any renderer means an edit here in the same change.
 
@@ -45,7 +45,9 @@ Gaps: no `--month` or `--year` pin, so re-rendering restamps to today. `--cat` c
 
 ## 3. Quote card
 
-Output `pietro-quote-NNN.png` 2160 square, light theme. Only path: `node tools/export-quote-images.mjs [--range a-b] [--force]` in the pietro.works quote repo; input is a row in `quotes.tsv` (`id`, `quote`, `highlight`). The exporter currently refuses to run (hash pin mismatch on quotes.tsv) and caps at 180 rows. No ad hoc quote spec exists. Editor can change eyebrow, name, role, overlays; the exporter cannot.
+Output `pietro-quote-NNN.png` 2160 square, light theme. Command: `node renderer/quote.mjs --out <dir> [--tsv <quotes.tsv>] [--ids all|1-5,9] [--force]`. Input is a row in `quotes.tsv` (`id`, `quote`, `highlight`); the default tsv is the quote library at `../pietro.works/gen/quote/quotes.tsv`. The template is `renderer/quote.html`, served by the driver with `/quotes.tsv` mapped to the chosen file. Existing valid PNGs are skipped unless `--force`. The delivered library lives in `assets/linkedin-images-2160/`, which is what `tools/scan-assets.mjs` indexes for Studio, so render there to enter the queue.
+
+This replaces the old `tools/export-quote-images.mjs` in the quote repo, which refused to run on a hash pin and capped at 180 rows. A 2160 render of quote 001 differs from the delivered library image by about 1.6% mean pixel difference (text antialiasing and dot-matrix only). No ad hoc quote spec exists; add a row to the tsv. Editor can change eyebrow, name, role, overlays; the driver cannot.
 
 Known data defects: quotes 086 and 133 have a `highlight` that is not a substring, so no accent renders.
 
