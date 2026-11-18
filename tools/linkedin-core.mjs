@@ -331,7 +331,13 @@ async function pressEscape(page) {
 }
 
 export async function clearTransientUi(page) {
-  for (let i = 0; i < 2; i += 1) { await pressEscape(page).catch(() => {}); await sleep(250); }
+  // Escape only when an overlay is actually open. Two blind Escapes on a clean feed leave LinkedIn's
+  // media editor stuck on "Loading" (no file input ever mounts), found 2026-11-13 by bisecting apply-plan against a bare probe.
+  for (let i = 0; i < 2; i += 1) {
+    const open = await evaluate(page, `(() => { ${DEEP_QUERY_HELPERS} return deepQueryAll('dialog[open], [role="dialog"], .artdeco-modal').some((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }); })()`).catch(() => false);
+    if (!open) return;
+    await pressEscape(page).catch(() => {}); await sleep(250);
+  }
 }
 
 async function isComposerOpen(page) {
@@ -424,7 +430,10 @@ async function setFileInput(page, client, sessionId, image) {
 async function applyFile(page, client, sessionId, file, chooserPromise) {
   const chooser = chooserPromise ? await Promise.race([chooserPromise, sleep(2500).then(() => null)]) : null;
   if (chooser?.backendNodeId) { await page('DOM.setFileInputFiles', { backendNodeId: chooser.backendNodeId, files: [file] }); return; }
-  await waitFor(page, `(() => { ${DEEP_QUERY_HELPERS} return deepQueryAll('input[type="file"]').find((i) => !i.closest('[class*="msg-overlay"], [class*="msg-convo"], #msg-overlay')); })()`, 15000, 'file input');
+  await waitFor(page, `(() => { ${DEEP_QUERY_HELPERS} return deepQueryAll('input[type="file"]').find((i) => !i.closest('[class*="msg-overlay"], [class*="msg-convo"], #msg-overlay')); })()`, 15000, 'file input').catch(async (e) => {
+    const inv = await evaluate(page, `(() => { ${DEEP_QUERY_HELPERS} return JSON.stringify(deepQueryAll('input[type="file"]').map((i) => ({ accept: String(i.accept).slice(0, 30), msg: Boolean(i.closest('[class*="msg-"]')), dlg: Boolean(i.closest('dialog')) }))) + ' dialogs=' + document.querySelectorAll('dialog[open]').length; })()`).catch(() => 'inventory failed');
+    throw new Error(`${e.message} (file inputs: ${inv})`);
+  });
   const fileInput = await page('Runtime.evaluate', { expression: `(() => { ${DEEP_QUERY_HELPERS} return deepQueryAll('input[type="file"]').find((i) => !i.closest('[class*="msg-overlay"], [class*="msg-convo"], #msg-overlay')); })()`, returnByValue: false });
   const objectId = fileInput.result?.objectId;
   if (!objectId) throw new Error('Could not locate LinkedIn file input');
@@ -611,12 +620,14 @@ export async function scheduleOne(page, client, sessionId, booking) {
   await stat(file);
   const needle = captionNeedle(booking.caption);
   await openComposer(page);
+  // Documents attach BEFORE the caption: a URL typed into the caption raises a link preview that removes the composer's
+  // media toolbar, so the Document option can no longer be reached (found 2026-11-13, caption with the PACS repo link).
+  if (booking.kind === 'document') await attachDocument(page, client, sessionId, file, booking.title);
   await focusComposer(page);
   await setComposerCaption(page, booking.caption, needle);
   await waitFor(page, `(() => { ${DEEP_QUERY_HELPERS} return [document.body.innerText || '', ...deepQueryAll('[contenteditable="true"], textarea, input').map((el) => el.innerText || el.value || '')].join('\\n').includes(${JSON.stringify(needle)}); })()`, 15000, 'caption insertion');
   await sleep(700);
-  if (booking.kind === 'document') await attachDocument(page, client, sessionId, file, booking.title);
-  else await attachImage(page, client, sessionId, file);
+  if (booking.kind !== 'document') await attachImage(page, client, sessionId, file);
   await sleep(2500);
   await advanceMediaEditor(page);
   await sleep(800);
@@ -732,8 +743,8 @@ export async function deleteScheduledPost(page, slotLocal, ctx = {}) {
     const t = String(activeDialog.innerText || '').replace(/\\s+/g, ' '); const m = t.match(/Scheduled \\((\\d+)\\)/);
     const out = { n: hits.length, count: m ? Number(m[1]) : null, rows: (t.match(/Posting [A-Z][a-z]{2}, /g) || []).length };
     if (hits.length !== 1) return out;
-    let row = hits[0]; for (let i = 0; i < 14 && row; i += 1, row = row.parentElement) { if (row.querySelector('svg[id^="overflow"]')) break; }
-    const ovf = row && row.querySelector('svg[id^="overflow"]'); if (!ovf) return { ...out, err: 'no overflow icon in the row' };
+    let row = hits[0]; for (let i = 0; i < 14 && row; i += 1, row = row.parentElement) { if (row.querySelector('svg[id^="overflow"], svg[id^="ellipses"], svg[aria-label="More options"]')) break; }
+    const ovf = row && row.querySelector('svg[id^="overflow"], svg[id^="ellipses"], svg[aria-label="More options"]'); if (!ovf) return { ...out, err: 'no overflow icon in the row' };
     if (${scrollTo ? 'true' : 'false'}) ovf.scrollIntoView({ block: 'center' });
     const r = ovf.getBoundingClientRect();
     return { ...out, hydrated: Boolean(ovf.closest('[role="button"],button')), x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
