@@ -83,7 +83,7 @@ PACS0006:
   fails_silently: "re-archiving a delivery mints a duplicate under a new number, or the slides LinkedIn document title loses its #NNN"
   justification: "the archive writes meta.number and scan-assets reads that same field to build the document title, so producer and consumer are coupled through a key neither side validates"
   kind: "message-contract"
-  notes: "On first archive the assigned number is stamped into the delivery meta.json; a re-archive reuses it and overwrites <prefix>-NNN.* in place. scan-assets reads meta.number for the title Pietro.works IN_THE_LOOP.MD #NNN. Folders archived before numbers were stamped were backfilled 2026-11-12 by pipeline/backfill-archive-numbers.mjs (sha256 match against the archived copy, 42 stamped, 0 ambiguous); rerun it dry-run if a queue folder ever shows up without a number."
+  notes: "On first archive the assigned number is stamped into the delivery meta.json; a re-archive reuses it and overwrites <prefix>-NNN.* in place. scan-assets reads meta.number for the title Pietro.works IN_THE_LOOP.MD #NNN. Folders archived before numbers were stamped were backfilled 2026-11-12 by pipeline/backfill-archive-numbers.mjs (sha256 match against the archived copy, 42 stamped, 0 ambiguous); rerun it dry-run if a queue folder ever shows up without a number. Since 2026-11-21 meta.doc_title, when present, wins over the #NNN title (decks outside the series, e.g. the PETRUS.PRINTS brand deck titled petrusprints.shop); never reuse meta.title for this, every series deck already carries it as the content title."
 
 PACS0007:
   anchor: "tools/publish.mjs:withCalendarLock"

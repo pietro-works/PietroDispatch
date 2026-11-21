@@ -101,7 +101,8 @@ async function scanSlides(drive, assets) {
     if (await exists(cover)) { try { thumb_rel = await makeThumb(cover, id); } catch (e) { console.error(`thumb failed ${id}: ${e.message}`); } }
     assets.push({
       asset_id: id, type: 'slides', kind: 'document', date, slug, variation: 1, number: num,
-      title: num ? `Pietro.works IN_THE_LOOP.MD #${num}` : titleFromSlug(slug),
+      // meta.doc_title overrides for decks outside the IN_THE_LOOP series (meta.title is the deck's content title, not this)
+      title: meta.doc_title || (num ? `Pietro.works IN_THE_LOOP.MD #${num}` : titleFromSlug(slug)),
       caption: await readText(cap), media_path: pdf,
       cover_path: await exists(cover) ? cover : '', thumb_rel,
     });
