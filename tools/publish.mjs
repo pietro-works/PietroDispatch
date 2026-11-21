@@ -5,11 +5,11 @@
  * single DB is db/calendar.json.
  *
  *   node publish.mjs plan
- *   node publish.mjs discover [--headless]
- *   node publish.mjs apply --ids <id1,id2,...> [--dry-run] [--headless] [--max N]
- *   node publish.mjs apply-plan --plan <plan.json> [--dry-run] [--headless]
- *   node publish.mjs unschedule --ids <id1,id2,...> [--dry-run] [--headless]
- *   node publish.mjs verify [--headless]
+ *   node publish.mjs discover [--headful]
+ *   node publish.mjs apply --ids <id1,id2,...> [--dry-run] [--headful] [--max N]
+ *   node publish.mjs apply-plan --plan <plan.json> [--dry-run] [--headful]
+ *   node publish.mjs unschedule --ids <id1,id2,...> [--dry-run] [--headful]
+ *   node publish.mjs verify [--headful]
  *
  * asset ids come from db/assets.json (run scan-assets.mjs first). A slot is reserved per
  * asset; a slot already holding a live booking (pending/scheduled/verified) is skipped.
@@ -29,13 +29,14 @@ const LIVE = new Set(['pending', 'scheduled', 'verified']);
 
 function parseArgs() {
   const [mode = 'help', ...rest] = process.argv.slice(2);
-  const o = { mode, ids: null, plan: null, dryRun: false, headless: false, max: Infinity, loginTimeout: 600, keepOpen: false };
+  const o = { mode, ids: null, plan: null, dryRun: false, headless: true, max: Infinity, loginTimeout: 600, keepOpen: false };
   for (let i = 0; i < rest.length; i += 1) {
     const a = rest[i];
     if (a === '--ids') o.ids = rest[++i].split(',').map((s) => s.trim()).filter(Boolean);
     else if (a === '--plan') o.plan = resolve(rest[++i]);
     else if (a === '--dry-run') o.dryRun = true;
-    else if (a === '--headless') o.headless = true;
+    else if (a === '--headless') o.headless = true;   // default; kept so old commands still parse
+    else if (a === '--headful') o.headless = false;   // opt-in only: a visible Chrome window, e.g. to log in once
     else if (a === '--keep-open') o.keepOpen = true;
     else if (a === '--max') o.max = Number(rest[++i]);
     else if (a === '--login-timeout') o.loginTimeout = Number(rest[++i]);
@@ -73,7 +74,7 @@ async function withCalendarLock(fn) {
 
 async function ensureLogin(page, opts) {
   if (await isLoggedIn(page)) return;
-  if (opts.headless) throw new Error('Not logged in and running headless. Run "discover" headful once to authenticate the profile.');
+  if (opts.headless) throw new Error('Not logged in and running headless. Run "discover --headful" once to authenticate the profile.');
   console.log(`Log in to LinkedIn in the opened Chrome window. Waiting up to ${opts.loginTimeout}s...`);
   if (!await waitForLogin(page, opts.loginTimeout)) throw new Error('LinkedIn login was not detected before timeout');
 }
@@ -353,7 +354,7 @@ async function modeVerify(opts) {
 async function main() {
   const opts = parseArgs();
   if (['help', '--help', '-h'].includes(opts.mode)) {
-    console.log('Usage:\n  publish.mjs plan\n  publish.mjs discover [--headless]\n  publish.mjs apply --ids <id1,id2> [--dry-run] [--headless] [--max N]\n  publish.mjs apply-plan --plan <plan.json> [--dry-run] [--headless]\n  publish.mjs unschedule --ids <id1,id2> [--dry-run] [--headless]\n  publish.mjs verify [--headless]');
+    console.log('Usage:\n  publish.mjs plan\n  publish.mjs discover [--headful]\n  publish.mjs apply --ids <id1,id2> [--dry-run] [--headful] [--max N]\n  publish.mjs apply-plan --plan <plan.json> [--dry-run] [--headful]\n  publish.mjs unschedule --ids <id1,id2> [--dry-run] [--headful]\n  publish.mjs verify [--headful]');
     return;
   }
   if (opts.mode === 'plan') return modePlan();

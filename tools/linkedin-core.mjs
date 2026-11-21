@@ -74,7 +74,7 @@ export class CdpClient {
   close() { this.ws.close(); }
 }
 
-export async function launchChrome({ headless = false, chrome } = {}) {
+export async function launchChrome({ headless = true, chrome } = {}) {   // headless unless a caller asks for --headful
   await mkdir(PROFILE_DIR, { recursive: true });
   const portFile = join(PROFILE_DIR, 'DevToolsActivePort');
   await unlink(portFile).catch(() => {});
